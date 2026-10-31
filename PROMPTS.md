@@ -5,9 +5,18 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Record the TestFlight test information in the App Store listing
+## Show how many Android testers Play still needs in the README
 
 2026-10-31, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**3.**
+> also every prompt update the github readme and maybe testflight group
+> how many android users needed still and if days have stopped already
+> counting
+
+## Record the TestFlight test information in the App Store listing
+
+2026-10-31, commit [c90c2bc](https://github.com/zululima/mismeet/commit/c90c2bcc44c4b3e085743ec94139696460a87724), model claude-opus-5-5, effort xhigh.
 
 **2.** (answer to: shall I create the public TestFlight link and submit    build 16 for Beta App Review?)
 > yes and put those to readme afterwards

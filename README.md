@@ -3,7 +3,7 @@
 Location sharing in the style of Find My, on Nostr, for iOS and Android. Each phone publishes
 its location to relays encrypted for each contact it shares with: no server, no Play Services.
 
-<img src="design/screenshots/ios-map.png" alt="iOS map" width="105"> <img src="design/screenshots/ios-contacts.png" alt="iOS contacts" width="105"> <img src="design/screenshots/ios-me.png" alt="iOS Me screen" width="105"> <img src="design/screenshots/android-map.png" alt="Android map" width="103"> <img src="design/screenshots/android-contacts.png" alt="Android contacts" width="103"> <img src="design/screenshots/android-me.png" alt="Android Me screen" width="103">
+<img src="design/screenshots/ios-map.png" alt="iOS map" width="94"> <img src="design/screenshots/ios-contacts.png" alt="iOS contacts" width="94"> <img src="design/screenshots/ios-me.png" alt="iOS Me screen" width="94"> <img src="design/screenshots/android-map.png" alt="Android map" width="92"> <img src="design/screenshots/android-contacts.png" alt="Android contacts" width="92"> <img src="design/screenshots/android-me.png" alt="Android Me screen" width="92">
 
 | [`spec/`](spec/SPEC.md) | [`ios/`](ios) | [`android/`](android) | [`docs/`](docs) |
 | --- | --- | --- | --- |
@@ -11,7 +11,8 @@ its location to relays encrypted for each contact it shares with: no server, no 
 
 Android testers join [mismeet-testers](https://groups.google.com/g/mismeet-testers) (members are
 hidden), then [opt in](https://play.google.com/apps/testing/app.mismeet.android) with the same
-Google account.
+Google account. Play needs 12 of them for 14 days in a row: 5 are in, 7 to go, and the 14 days
+start once all 12 are.
 
 New here? Paste this into Claude Code:
 
