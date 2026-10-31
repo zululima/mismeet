@@ -9,10 +9,9 @@ its location to relays encrypted for each contact it shares with: no server, no 
 | --- | --- | --- | --- |
 | the protocol both apps follow | Swift and SwiftUI | Kotlin, no Play Services | [development](docs/development.md), [releasing](docs/releasing.md) |
 
-Test it on Android: join the Google Group [mismeet-testers](https://groups.google.com/g/mismeet-testers)
-with the Google account your phone's Play Store uses, then opt in at
-<https://play.google.com/apps/testing/app.mismeet.android> and install Mismeet from there. Only
-the group's owner sees who has joined.
+Android testers join [mismeet-testers](https://groups.google.com/g/mismeet-testers) (members are
+hidden), then [opt in](https://play.google.com/apps/testing/app.mismeet.android) with the same
+Google account.
 
 New here? Paste this into Claude Code:
 
