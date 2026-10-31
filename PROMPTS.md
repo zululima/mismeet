@@ -5,9 +5,17 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Reframe the map on everyone when the app comes back
+## Link the Android closed test from the README
 
 2026-10-31, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**1.**
+> gimme the testflight invite and google group invite? put them to
+> readme too? if participants are not public
+
+## Reframe the map on everyone when the app comes back
+
+2026-10-31, commit [40d8a8c](https://github.com/zululima/mismeet/commit/40d8a8cc9fd2862db3bb8c41699c1d8b3eae24c9), model claude-opus-5-5, effort xhigh.
 
 **2.**
 > also this happened yesterday when i opened mismeet. debug and fix. it
