@@ -86,3 +86,24 @@ The app works the same in every region where it is offered. It is not offered in
 Regulated industries and third-party material
 Not applicable. The app does not operate in a regulated industry and contains no protected third-party material. Its source code is public under the GNU Affero General Public License with an app store exception: https://github.com/zululima/mismeet
 ```
+
+## TestFlight
+
+The external group "Public" hands out a public link, with no tester limit, and needs each new
+version's first build to pass Beta App Review. Test Information holds the texts below, the
+marketing URL above, the privacy policy
+https://github.com/zululima/mismeet/blob/main/PRIVACY.md, as feedback email the address Play
+shows publicly, and for Beta App Review the contact App Review has, no sign-in and the App
+Review notes above.
+
+Beta App Description:
+
+```text
+Mismeet shows the people you choose where you are, and you where they are, without an account and without a company server in the middle. Locations travel through Nostr relays, encrypted separately for each contact.
+```
+
+What to Test:
+
+```text
+Add a contact by scanning the invite QR code on their Me tab, turn on Share my location on yours, and check that each phone shows the other on the map within a minute. Report bugs and ideas at github.com/zululima/mismeet/issues.
+```

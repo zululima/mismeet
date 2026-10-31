@@ -5,9 +5,16 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Fit the tester links in one README line
+## Record the TestFlight test information in the App Store listing
 
 2026-10-31, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**2.** (answer to: shall I create the public TestFlight link and submit    build 16 for Beta App Review?)
+> yes and put those to readme afterwards
+
+## Fit the tester links in one README line
+
+2026-10-31, commit [0d4fe1e](https://github.com/zululima/mismeet/commit/0d4fe1e93c77868718a571ecc01baa118b645cdb), model claude-opus-5-5, effort xhigh.
 
 **1.** Quoted under [2d06c9e](https://github.com/zululima/mismeet/commit/2d06c9ec0ef50a6114503fe0be7aa908b818f5ac).
 
