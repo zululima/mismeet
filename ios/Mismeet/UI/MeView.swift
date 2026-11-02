@@ -6,7 +6,7 @@ struct MeView: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Invite") {
+                Section {
                     if let image = QRCode.image(for: model.inviteLink) {
                         Image(uiImage: image)
                             .resizable()
@@ -15,12 +15,18 @@ struct MeView: View {
                             .frame(maxWidth: 240)
                             .frame(maxWidth: .infinity)
                     }
-                    Text(model.npub)
-                        .font(.footnote.monospaced())
-                        .textSelection(.enabled)
-                    Button("Copy invite") {
+                    if let link = URL(string: model.inviteLink) {
+                        ShareLink(item: link, message: Text("Add me on Mismeet")) {
+                            Label("Share invite", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                    Button("Copy invite link", systemImage: "doc.on.doc") {
                         UIPasteboard.general.string = model.inviteLink
                     }
+                } header: {
+                    Text("Invite")
+                } footer: {
+                    Text("Send the link, or let them scan the code. Each of you adds the other's invite, and you see each other once both have.")
                 }
                 Section("Sharing from this phone") {
                     Toggle("Share my location", isOn: Binding(
@@ -32,24 +38,19 @@ struct MeView: View {
                         if model.authorization != .authorizedAlways {
                             Button("Allow location") { model.requestLocationAuthorization() }
                         }
-                        Button("Publish now") { model.publishNow() }
+                        Button("Share now") { model.publishNow() }
                             .disabled(model.isPublishing)
                         if let at = model.state.lastPublishedAt {
-                            LabeledContent("Last published", value: at.formatted(date: .abbreviated, time: .shortened))
+                            LabeledContent("Last shared with contacts", value: at.formatted(date: .abbreviated, time: .shortened))
                         }
                     } else {
-                        Text("Off: this phone only watches its contacts, publishes nothing and needs no location permission.")
+                        Text("Off: this phone only watches its contacts, shares nothing and needs no location permission.")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
-                if model.showsLog {
-                    Section("Log") {
-                        ForEach(model.log.reversed()) { line in
-                            Text("\(line.time.formatted(date: .omitted, time: .standard))  \(line.text)")
-                                .font(.caption)
-                        }
-                    }
+                Section {
+                    NavigationLink("Check setup") { SetupChecksView() }
                 }
             }
             .navigationTitle("Me")

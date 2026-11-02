@@ -5,9 +5,42 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
+## Add setup checks, a taller sheet and tappable map avatars
+
+2026-11-02, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**1.**
+> no need to include the opt in link. people will find it from the
+> google group. also does mismeet have a dark mode based on user
+> preferences already? if not implement. also generate me logos used
+> already so i can give them to my designer as resolution reference what
+> logos need light and dark version as well. also the app should have
+> the option to give anonymous and encyprted telemetry data via nostr to
+> maybe your npub? telemetry? surely i dont need location info etc just
+> if something broke? the app should also have slack like feature to
+> debug the software like smoke tests is location sharing on, is
+> background allowance on. anything else? i should also be able to tap
+> peopels icons to go there. and zoom as close as find me does look up
+> the photos i include. also explain why i [a friend's] phone didnt
+> share location in the screenshot after 17 minutes. whats the current
+> rate we use? 2 mins? should i host my own encrypted only notes nostr
+> server to make sure relays always accept the locations sharings? also
+> connecting with mismeet to other people is not straight forward rn.
+> always hide the npub other than from the invite itself. my brohter
+> just sent me npub so its not ideal. cant the link also just send
+> another link to the other direction too? also dont show logs in the
+> app anymore youll collect those if people give permission. also
+> publish location sounds insecure use something more like last shared
+> to contacts etc. also check the ss the contacts menu should be way
+> higher just like find me.
+
+**2.**
+> [three screenshots: a contact on Mismeet's map, Find My's people
+> list and Find My's card for a person]
+
 ## Link the public TestFlight beta from the README
 
-2026-10-31, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+2026-10-31, commit [deda106](https://github.com/zululima/mismeet/commit/deda106f5d07cf3d0d1d7f5d9bdd116f70ca60d5), model claude-opus-5-5, effort xhigh.
 
 **2.** (answer to: shall I create the public TestFlight link and submit    build 16 for Beta App Review?) Quoted under [c90c2bc](https://github.com/zululima/mismeet/commit/c90c2bcc44c4b3e085743ec94139696460a87724).
 
@@ -875,6 +908,8 @@ text in CLAUDE.md?)
 - pls: please
 - qr: quick response code
 - repo: repository
+- rn: right now
 - sku: stock keeping unit
+- ss: screenshot
 - uri: uniform resource identifier
 - url: uniform resource locator

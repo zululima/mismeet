@@ -17,6 +17,7 @@ import app.mismeet.android.location.RoadData
 import app.mismeet.android.nostr.RelayService
 import app.mismeet.android.store.Contact
 import app.mismeet.android.store.PersistedState
+import app.mismeet.android.store.ShareFailure
 import app.mismeet.android.store.StateStore
 import app.mismeet.protocol.ContactRelays
 import app.mismeet.protocol.Invite
@@ -58,8 +59,6 @@ import org.nostrdevkit.sdk.RelayUrl
 class AppModel private constructor(private val context: Context) {
     enum class Trigger { TIMER, FOREGROUND, MANUAL, CONTACTS_CHANGED }
 
-    data class LogLine(val time: Long, val text: String)
-
     private val store = StateStore(context)
     private val _state = MutableStateFlow(store.load())
     val state: StateFlow<PersistedState> = _state.asStateFlow()
@@ -67,8 +66,6 @@ class AppModel private constructor(private val context: Context) {
 
     /** An invite link the app was opened with, until the Add contact dialog takes it. */
     val openedInvite: StateFlow<String?> = _openedInvite.asStateFlow()
-    private val _log = MutableStateFlow<List<LogLine>>(emptyList())
-    val log: StateFlow<List<LogLine>> = _log.asStateFlow()
     private val _notices = MutableSharedFlow<String>(extraBufferCapacity = 4)
 
     /** Why an action the user took did not happen, each shown once in a snackbar. */
@@ -136,7 +133,7 @@ class AppModel private constructor(private val context: Context) {
     fun publishNow() {
         if (!_state.value.sharingEnabled) return
         if (!LocationProvider.hasForegroundPermission(context)) {
-            tell("Location permission is needed to publish")
+            tell("Location permission is needed to share your location")
             return
         }
         scope.launch { publishFresh(Trigger.MANUAL) }
@@ -155,12 +152,13 @@ class AppModel private constructor(private val context: Context) {
     fun addContact(inviteText: String, name: String) {
         val invite = Invite.parse(inviteText)
         val id = invite.publicKey.toHex()
-        require(id != keys.publicKey().toHex()) { "That is your own key." }
+        require(id != keys.publicKey().toHex()) { "That is your own invite." }
         require(_state.value.contacts.none { it.id == id }) { "That contact is already in the list." }
         val trimmed = name.trim()
+        require(trimmed.isNotEmpty()) { "Give the contact a name." }
         val contact = Contact(
             id = id,
-            name = trimmed.ifEmpty { invite.publicKey.toBech32().take(12) },
+            name = trimmed,
             relays = invite.relays.map { it.toString() },
             addedAt = System.currentTimeMillis(),
         )
@@ -226,7 +224,10 @@ class AppModel private constructor(private val context: Context) {
     // Publishing
 
     private suspend fun publishFresh(trigger: Trigger) {
-        LocationProvider.currentFix(context)?.let { onFix(it, trigger) } ?: log("No fix available")
+        LocationProvider.currentFix(context)?.let { onFix(it, trigger) } ?: run {
+            log("No fix available")
+            shareFailed("Could not get a position")
+        }
     }
 
     suspend fun onFix(fix: LocationFix, trigger: Trigger) {
@@ -243,6 +244,7 @@ class AppModel private constructor(private val context: Context) {
             }
             if (now - fix.timeMillis > ProtocolConstants.MAX_FIX_AGE_SECONDS * 1000) {
                 log("Skipped publish: the fix is older than an hour")
+                shareFailed("The newest position was over an hour old")
                 return
             }
             val recipients = sharingRecipients()
@@ -252,7 +254,10 @@ class AppModel private constructor(private val context: Context) {
             }
             runCatching {
                 LocationEventBuilder.build(fix.payload(batteryLevel()), recipients, keys, now / 1000, current.lastPublishedCreatedAt)
-            }.onSuccess { send(it, "Location") }.onFailure { log("Publish failed: ${it.message}") }
+            }.onSuccess { send(it, "Location") }.onFailure {
+                log("Publish failed: ${it.message}")
+                shareFailed("Could not build the event")
+            }
         }
     }
 
@@ -304,11 +309,19 @@ class AppModel private constructor(private val context: Context) {
         val result = relays.publish(event, relayUrls)
         if (result.succeeded.isEmpty()) {
             log("$what: no relay accepted it, ${result.summary}")
+            shareFailed("No relay accepted it: ${result.summary}")
         } else {
             update { it.copy(lastPublishedCreatedAt = event.createdAt().asSecs().toLong(), lastPublishedAt = System.currentTimeMillis()) }
             log("$what: accepted by ${result.succeeded.size} of ${relayUrls.size} relays")
         }
     }
+
+    private fun shareFailed(reason: String) {
+        update { it.copy(lastShareFailure = ShareFailure(System.currentTimeMillis(), reason)) }
+    }
+
+    /** Whether each of this phone's relays answers, and the location event of this phone it holds. */
+    suspend fun checkRelays(): List<RelayService.RelayCheck> = relays.check(_state.value.relays, keys.publicKey())
 
     private fun sharingRecipients(): List<PublicKey> =
         if (_state.value.sharingEnabled) _state.value.contacts.filter { it.share }.mapNotNull { it.publicKey() } else emptyList()
@@ -424,7 +437,6 @@ class AppModel private constructor(private val context: Context) {
 
     private fun log(text: String) {
         Log.i("Mismeet", text)
-        _log.update { (it + LogLine(System.currentTimeMillis(), text)).takeLast(100) }
     }
 
     companion object {

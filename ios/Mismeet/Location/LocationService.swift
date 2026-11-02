@@ -51,12 +51,17 @@ struct LocationFix: Codable, Equatable, Sendable {
 final class LocationService: NSObject, CLLocationManagerDelegate {
     var onFix: ((LocationFix) -> Void)?
     var onAuthorizationChange: ((CLAuthorizationStatus) -> Void)?
+    var onFailure: ((Error) -> Void)?
 
     private let manager = CLLocationManager()
     private var monitoring = false
 
     var authorizationStatus: CLAuthorizationStatus {
         manager.authorizationStatus
+    }
+
+    var preciseLocation: Bool {
+        manager.accuracyAuthorization == .fullAccuracy
     }
 
     override init() {
@@ -98,7 +103,9 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         Task { @MainActor in self.onFix?(fix) }
     }
 
-    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {}
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+        Task { @MainActor in self.onFailure?(error) }
+    }
 
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         let status = manager.authorizationStatus

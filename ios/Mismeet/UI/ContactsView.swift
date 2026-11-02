@@ -2,8 +2,26 @@ import CoreLocation
 import PhotosUI
 import SwiftUI
 
+/// How far the panel at the bottom of the map is pulled up, as Find My's sheet: the header alone,
+/// about a third of the screen, or most of it.
+enum PanelHeight {
+    case collapsed, medium, large
+
+    /// The height of what the panel shows below its header, as a share of the screen.
+    var fraction: CGFloat {
+        switch self {
+        case .collapsed: 0
+        case .medium: 0.27
+        case .large: 0.62
+        }
+    }
+
+    var higher: PanelHeight { self == .collapsed ? .medium : .large }
+    var lower: PanelHeight { self == .large ? .medium : .collapsed }
+}
+
 /// The contacts in a panel at the bottom of the map, like Find My's people: the header stays in
-/// view, and pulling it up or tapping it shows the list.
+/// view, and pulling it up or down moves between the heights of `PanelHeight`.
 struct ContactList: View {
     private struct AddRequest: Identifiable {
         let id = UUID()
@@ -12,7 +30,7 @@ struct ContactList: View {
 
     @Environment(AppModel.self) private var model
     @State private var adding: AddRequest?
-    @Binding var expanded: Bool
+    @Binding var height: PanelHeight
     /// Shows a contact on the map.
     let focus: (String) -> Void
 
@@ -40,11 +58,11 @@ struct ContactList: View {
             .padding([.horizontal, .top])
             .padding(.bottom, 12)
             .contentShape(Rectangle())
-            .onTapGesture { withAnimation(.snappy) { expanded.toggle() } }
+            .onTapGesture { withAnimation(.snappy) { height = height == .collapsed ? .medium : .collapsed } }
             .gesture(DragGesture(minimumDistance: 10).onEnded { drag in
-                withAnimation(.snappy) { expanded = drag.translation.height < 0 }
+                withAnimation(.snappy) { height = drag.translation.height < 0 ? height.higher : height.lower }
             })
-            if expanded {
+            if height != .collapsed {
                 List {
                     if model.state.contacts.isEmpty {
                         ContentUnavailableView(
@@ -64,7 +82,7 @@ struct ContactList: View {
                 }
                 .listStyle(.plain)
                 .scrollContentBackground(.hidden)
-                .containerRelativeFrame(.vertical) { length, _ in length * 0.5 }
+                .containerRelativeFrame(.vertical) { length, _ in length * height.fraction }
                 .refreshable { await model.refresh() }
             }
         }
@@ -231,7 +249,8 @@ struct AddContactView: View {
                         Text("Add").frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
-                    .disabled(invite.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(invite.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                        name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
                 .controlSize(.large)
                 .padding()

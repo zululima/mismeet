@@ -231,7 +231,7 @@ fun movement(payload: LocationPayload): String? {
     return "$mode at ${(speed * 3.6).roundToInt()} km/h"
 }
 
-private fun openMap(context: Context, contact: Contact) {
+fun openMap(context: Context, contact: Contact) {
     val payload = contact.lastPayload ?: return
     val point = "${payload.latitude},${payload.longitude}"
     val intent = Intent(Intent.ACTION_VIEW, Uri.parse("geo:$point?q=$point(${Uri.encode(contact.name)})"))
@@ -290,7 +290,7 @@ private fun AddContactDialog(initialInvite: String, onDismiss: () -> Unit, onAdd
                         .onSuccess { onDismiss() }
                         .onFailure { error = it.message ?: "Not a valid invite" }
                 },
-                enabled = invite.isNotBlank(),
+                enabled = invite.isNotBlank() && name.isNotBlank(),
             ) { Text("Add") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },

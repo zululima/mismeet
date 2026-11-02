@@ -269,11 +269,12 @@ the iPhone's scan tells it whom to encrypt for, the Android phone's scan tells i
 to fetch.
 
 1. On the iPhone, open Me, turn on "Share my location" and grant location while using the app,
-   then tap "Allow location" for "Always". The log on the same screen shows "Relay list:
-   accepted by N of 3 relays".
+   then tap "Allow location" for "Always". "Check setup" on the same screen lists each relay
+   as answering.
 2. On the Android phone, open Me: its invite QR code is on screen. On the iPhone, tap + beside
    Contacts at the bottom of the map, then "Scan QR code", scan it, give the contact a name and
-   tap Add. The iPhone log shows "Location: accepted by N of 3 relays" within a few seconds.
+   tap Add. Within a few seconds "Check setup" on the iPhone shows "Last share" a moment ago
+   and each relay holding that location.
 3. On the iPhone, open Me to show its QR code. On the Android phone, tap Add beside Contacts at
    the bottom of the map, then "Scan QR code", allow the camera, scan it, name the contact, Add.
    Pulled up, the contact list shows the district, "seen ..." and the distance after the next
@@ -283,7 +284,7 @@ to fetch.
    them too.
 4. Walk a few hundred metres with the iPhone, or drive. Significant location changes wake the
    app and the Android row's "Seen" time moves. Pulling the contact list down on the iPhone, once
-   it is pulled up over the map, refreshes its own view; the "Publish now" button on its Me
-   screen forces a publish.
+   it is pulled up over the map, refreshes its own view; the "Share now" button on its Me
+   screen forces a share.
 5. To check revocation, switch "Share my location" off for the contact on the iPhone: the next
    refresh on the Android phone shows "no longer sharing", with the last position kept.

@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,7 +41,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import app.mismeet.android.AppModel
-import app.mismeet.android.BuildConfig
 import app.mismeet.android.location.LocationProvider
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -49,8 +49,12 @@ import com.google.zxing.qrcode.QRCodeWriter
 @Composable
 fun MeScreen(model: AppModel, modifier: Modifier = Modifier) {
     val state by model.state.collectAsState()
-    val log by model.log.collectAsState()
     val context = LocalContext.current
+    var checking by remember { mutableStateOf(false) }
+    if (checking) {
+        SetupChecksScreen(model, onDone = { checking = false }, modifier)
+        return
+    }
     var permissionVersion by remember { mutableIntStateOf(0) }
     val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         permissionVersion++
@@ -87,10 +91,19 @@ fun MeScreen(model: AppModel, modifier: Modifier = Modifier) {
     Column(modifier.padding(16.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Invite", style = MaterialTheme.typography.titleMedium)
         Image(qr.asImageBitmap(), contentDescription = "Invite QR code", modifier = Modifier.size(240.dp).align(Alignment.CenterHorizontally))
-        Text(model.npub, style = MaterialTheme.typography.bodySmall)
-        Button(onClick = {
-            context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Mismeet invite", inviteLink))
-        }) { Text("Copy invite") }
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button(onClick = {
+                val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, "Add me on Mismeet: $inviteLink")
+                context.startActivity(Intent.createChooser(send, "Share invite"))
+            }) { Text("Share invite") }
+            OutlinedButton(onClick = {
+                context.getSystemService(ClipboardManager::class.java)?.setPrimaryClip(ClipData.newPlainText("Mismeet invite", inviteLink))
+            }) { Text("Copy link") }
+        }
+        Text(
+            "Send the link, or let them scan the code. Each of you adds the other's invite, and you see each other once both have.",
+            style = MaterialTheme.typography.bodySmall,
+        )
 
         Text("Sharing from this phone", style = MaterialTheme.typography.titleMedium)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
@@ -99,7 +112,7 @@ fun MeScreen(model: AppModel, modifier: Modifier = Modifier) {
         }
         if (!state.sharingEnabled) {
             Text(
-                "Off: this phone only watches its contacts, publishes nothing and needs no location permission.",
+                "Off: this phone only watches its contacts, shares nothing and needs no location permission.",
                 style = MaterialTheme.typography.bodySmall,
             )
         } else {
@@ -122,16 +135,13 @@ fun MeScreen(model: AppModel, modifier: Modifier = Modifier) {
                     )
                 }) { Text("Allow unrestricted battery use") }
             }
-            Button(onClick = { model.publishNow() }, enabled = foreground) { Text("Publish now") }
-            state.lastPublishedAt?.let { Text("Last published ${DateFormat.getTimeFormat(context).format(it)}", style = MaterialTheme.typography.bodySmall) }
-        }
-
-        if (BuildConfig.SHOWS_LOG) {
-            Text("Log", style = MaterialTheme.typography.titleMedium)
-            log.asReversed().forEach { line ->
-                Text("${DateFormat.getTimeFormat(context).format(line.time)}  ${line.text}", style = MaterialTheme.typography.bodySmall)
+            Button(onClick = { model.publishNow() }, enabled = foreground) { Text("Share now") }
+            state.lastPublishedAt?.let {
+                Text("Last shared with contacts ${DateFormat.getTimeFormat(context).format(it)}", style = MaterialTheme.typography.bodySmall)
             }
         }
+
+        OutlinedButton(onClick = { checking = true }) { Text("Check setup") }
     }
 }
 

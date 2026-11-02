@@ -14,7 +14,7 @@ android {
         applicationId = "app.mismeet.android"
         minSdk = 29
         targetSdk = 36
-        versionCode = 13
+        versionCode = 14
         versionName = "0.1.0"
         // Phones are arm64 or, among older ones, 32-bit ARM; the x86 builds of the bindings'
         // native libraries would only make the APK larger.
@@ -41,17 +41,6 @@ android {
             getByName("release") {
                 signingConfig = signingConfigs.getByName("release")
             }
-        }
-    }
-
-    // Play cannot tell an app which track installed it, so closed testing gets builds of its own
-    // with -PtestBuild, the only release builds that show the log.
-    buildTypes {
-        getByName("debug") {
-            buildConfigField("boolean", "SHOWS_LOG", "true")
-        }
-        getByName("release") {
-            buildConfigField("boolean", "SHOWS_LOG", providers.gradleProperty("testBuild").isPresent.toString())
         }
     }
 

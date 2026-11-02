@@ -5,7 +5,7 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @State private var screen: Screen = Screen.testTab == "me" ? .me : .map
     @State private var focused: String?
-    @State private var listUp = Screen.testTab == "contacts"
+    @State private var panel: PanelHeight = Screen.testTab == "contacts" ? .large : .medium
 
     enum Screen: Hashable {
         case map, me
@@ -24,7 +24,7 @@ struct RootView: View {
     var body: some View {
         TabView(selection: $screen) {
             Tab("Map", systemImage: "map", value: .map) {
-                ContactsMapView(focused: $focused, listUp: $listUp)
+                ContactsMapView(focused: $focused, panel: $panel)
             }
             Tab("Me", systemImage: "person.crop.circle", value: .me) {
                 MeView()

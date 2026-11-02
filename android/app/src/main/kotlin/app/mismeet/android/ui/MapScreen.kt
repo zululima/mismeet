@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -24,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetScaffoldState
 import androidx.compose.material3.rememberStandardBottomSheetState
@@ -41,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
@@ -79,8 +82,9 @@ import org.osmdroid.views.overlay.Polyline
  * agent. Opens framed around the people in this phone's country, like Find My, again each time the
  * app comes back, and follows them as they move until the map is moved by hand; the button at the
  * bottom returns there, and a second tap widens to everyone, abroad included. The contact list is
- * a sheet over the map, and the [focused] contact, tapped in it, is framed with its card in the
- * sheet until it is closed.
+ * a sheet over the map, peeking at about a third of the screen as Find My's does, and the
+ * [focused] contact, tapped in it or on the map, is framed with its card in the sheet until it is
+ * closed.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -110,7 +114,7 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
     val someoneAbroad = nearby.size != everyone.size
     val focusedContact = located.firstOrNull { it.id == focused }
     val focusKey = focusedContact?.lastPayload?.let { "${focusedContact.id}:${it.latitude},${it.longitude},${it.accuracy}" }
-    val peek = if (focusedContact != null) CARD_PEEK else LIST_PEEK
+    val peek = (LocalConfiguration.current.screenHeightDp * PEEK_FRACTION).dp
     val sheet = rememberStandardBottomSheetState(
         initialValue = if (state.contacts.isEmpty()) SheetValue.Expanded else SheetValue.PartiallyExpanded,
         skipHiddenState = true,
@@ -161,6 +165,7 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
         }
     }
     val markerSize = with(LocalDensity.current) { 44.dp.roundToPx() }
+    val focusedMarkerSize = with(LocalDensity.current) { 56.dp.roundToPx() }
     LaunchedEffect(focused) {
         if (focused != null) sheet.partialExpand()
     }
@@ -179,18 +184,28 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
             if (contact == null) {
                 ContactList(model, onFocus, Modifier.fillMaxHeight(LIST_HEIGHT).onSizeChanged { listPixels = it.height })
             } else {
-                Row(
-                    Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, bottom = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
+                    Modifier.fillMaxWidth().height(peek).padding(start = 16.dp, end = 8.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Avatar(contact, model.photo(contact), 44.dp, Modifier.size(44.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(contact.name, style = MaterialTheme.typography.titleMedium)
-                        Text(status(contact, placeNames[contact.id]), style = MaterialTheme.typography.bodySmall)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Avatar(contact, model.photo(contact), 48.dp, Modifier.size(48.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(contact.name, style = MaterialTheme.typography.titleLarge)
+                            Text(status(contact, placeNames[contact.id]), style = MaterialTheme.typography.bodyMedium)
+                        }
+                        IconButton(onClick = onUnfocus) { Icon(Icons.Filled.Close, contentDescription = "Close") }
                     }
-                    distance(contact, state)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-                    IconButton(onClick = onUnfocus) { Icon(Icons.Filled.Close, contentDescription = "Close") }
+                    Row(Modifier.padding(end = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Button(onClick = { openMap(context, contact) }) { Text("Directions") }
+                        distance(contact, state)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                    }
+                    if (state.sharingEnabled) {
+                        Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("Share my location", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                            Switch(checked = contact.share, onCheckedChange = { model.setShare(contact.id, it) })
+                        }
+                    }
                 }
             }
         },
@@ -254,14 +269,23 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
                                 title = "${contact.name}, estimated"
                                 snippet = "Guessed along the road from the last fix, ${movement(payload)}"
                                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                                setOnMarkerClickListener { _, _ ->
+                                    onFocus(contact.id)
+                                    true
+                                }
                             }
                         }
+                        val size = if (contact.id == focused) focusedMarkerSize else markerSize
                         view.overlays += Marker(view).apply {
                             position = GeoPoint(payload.latitude, payload.longitude)
-                            icon = BitmapDrawable(view.resources, avatar)
+                            icon = BitmapDrawable(view.resources, if (size == markerSize) avatar else avatarBitmap(contact, model.photo(contact), size))
                             title = contact.name
                             snippet = status(contact, placeNames[contact.id])
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                            setOnMarkerClickListener { _, _ ->
+                                onFocus(contact.id)
+                                true
+                            }
                         }
                     }
                     own?.let { fix ->
@@ -298,9 +322,8 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
 private enum class Framing { NEARBY, EVERYONE }
 
 private const val ESTIMATE_REFRESH_MILLIS = 10_000L
-private const val LIST_HEIGHT = 0.6f
-private val LIST_PEEK = 100.dp
-private val CARD_PEEK = 124.dp
+private const val LIST_HEIGHT = 0.85f
+private const val PEEK_FRACTION = 0.36f
 private const val ESTIMATE_COLOUR = 0xCC5E35B1.toInt()
 private const val FOCUS_FILL = 0x402979FF
 private const val LIGHT_LOADING = 0xFFD8D0D0.toInt()
@@ -331,9 +354,9 @@ private fun points(
 private fun countryName(code: String?): String =
     code?.let { runCatching { Locale.Builder().setRegion(it).build().displayCountry }.getOrNull() }?.ifBlank { null } ?: "Home"
 
-/** Frames a focused contact with the circle of its accuracy, and at least 800 m across. */
+/** Frames a focused contact with the circle of its accuracy, and at least 350 m across, as close as Find My. */
 private fun frameAround(map: MapView, point: GeoPoint, accuracy: Int, sheetPixels: Int) {
-    val half = maxOf(accuracy * 1.5, 400.0)
+    val half = maxOf(accuracy * 1.5, 175.0)
     val dLat = half / 110_574.0
     val dLon = half / (cos(Math.toRadians(point.latitude)) * 111_320.0)
     fit(map, BoundingBox(point.latitude + dLat, point.longitude + dLon, point.latitude - dLat, point.longitude - dLon), 0, sheetPixels)

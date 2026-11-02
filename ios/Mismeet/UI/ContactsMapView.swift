@@ -4,8 +4,8 @@ import SwiftUI
 /// Opens framed around the people in this phone's country, the user included, like Find My, again
 /// each time the app comes back, and follows them as they move until the map is moved by hand. The
 /// button at the bottom returns there, and a second tap widens to everyone, abroad included. The
-/// contact list is a panel at the bottom, and a contact tapped in it is focused, with its card in
-/// the panel until it is closed.
+/// contact list is a panel at the bottom, and a contact tapped in it or on the map is focused, with
+/// its card in the panel until it is closed.
 struct ContactsMapView: View {
     private struct Estimate {
         var path: [CLLocationCoordinate2D]
@@ -25,7 +25,7 @@ struct ContactsMapView: View {
     @State private var countries: Countries?
     @State private var wasInBackground = false
     @Binding var focused: String?
-    @Binding var listUp: Bool
+    @Binding var panel: PanelHeight
 
     private var located: [Contact] {
         model.state.contacts.filter { $0.lastPayload != nil }
@@ -77,13 +77,15 @@ struct ContactsMapView: View {
                         .stroke(Color.purple.opacity(0.8), style: StrokeStyle(lineWidth: 4, lineCap: .round, dash: [8, 6]))
                     Annotation("\(contact.name), estimated", coordinate: estimate.point) {
                         ContactAvatar(contact: contact, size: 36).opacity(0.45).environment(model)
+                            .onTapGesture { focused = contact.id }
                     }
                 }
                 if let payload = contact.lastPayload {
                     Annotation(contact.name, coordinate: CLLocationCoordinate2D(latitude: payload.latitude, longitude: payload.longitude)) {
-                        ContactAvatar(contact: contact)
+                        ContactAvatar(contact: contact, size: contact.id == focused ? 56 : 44)
                             .saturation(contact.sharing == .notSharing ? 0 : 1)
                             .environment(model)
+                            .onTapGesture { focused = contact.id }
                     }
                 }
             }
@@ -109,29 +111,12 @@ struct ContactsMapView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             Group {
                 if let contact = focusedContact {
-                    HStack(alignment: .top, spacing: 12) {
-                        ContactAvatar(contact: contact)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(contact.name).font(.headline)
-                            Text(ContactRow.status(of: contact, place: model.placeNames[contact.id]))
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        if let distance = ContactRow.distance(to: contact, in: model.state) {
-                            Text(distance).font(.subheadline).foregroundStyle(.secondary)
-                        }
-                        Button("Close", systemImage: "xmark") {
-                            focused = nil
-                            show(.nearby)
-                        }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.bordered)
-                        .buttonBorderShape(.circle)
+                    ContactCard(contact: contact) {
+                        focused = nil
+                        show(.nearby)
                     }
-                    .padding()
                 } else {
-                    ContactList(expanded: $listUp) { focused = $0 }
+                    ContactList(height: $panel) { focused = $0 }
                 }
             }
             .background {
@@ -142,9 +127,6 @@ struct ContactsMapView: View {
             }
         }
         .mapScope(mapScope)
-        .onAppear {
-            if model.state.contacts.isEmpty { listUp = true }
-        }
         .task {
             countries = await Task.detached { Countries.bundled() }.value
         }
@@ -207,7 +189,7 @@ struct ContactsMapView: View {
 
     private func frameFocused() {
         guard let payload = focusedContact?.lastPayload else { return }
-        let span = max(Double(payload.accuracy) * 3, 800)
+        let span = max(Double(payload.accuracy) * 3, 350)
         position = .region(MKCoordinateRegion(
             center: CLLocationCoordinate2D(latitude: payload.latitude, longitude: payload.longitude),
             latitudinalMeters: span, longitudinalMeters: span
@@ -229,5 +211,64 @@ struct ContactsMapView: View {
             center: CLLocationCoordinate2D(latitude: (south + north) / 2, longitude: (west + east) / 2),
             span: MKCoordinateSpan(latitudeDelta: (north - south) * 1.4 + 0.01, longitudeDelta: (east - west) * 1.4 + 0.01)
         ))
+    }
+}
+
+/// A focused contact in the panel, as Find My's card for a person: where and when they were seen,
+/// directions there, and whether this phone shares with them. It is as tall as the panel's middle
+/// height, so the map keeps the same space above it.
+private struct ContactCard: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.openURL) private var openURL
+    let contact: Contact
+    let close: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: 12) {
+                ContactAvatar(contact: contact)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(contact.name).font(.title2.bold())
+                    Text(ContactRow.status(of: contact, place: model.placeNames[contact.id]))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button("Close", systemImage: "xmark", action: close)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.bordered)
+                    .buttonBorderShape(.circle)
+            }
+            if let payload = contact.lastPayload,
+               let url = URL(string: "https://maps.apple.com/?daddr=\(payload.latitude),\(payload.longitude)") {
+                Button { openURL(url) } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "arrow.triangle.turn.up.right.circle.fill")
+                            .font(.title)
+                            .foregroundStyle(.blue)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Directions").font(.headline)
+                            if let distance = ContactRow.distance(to: contact, in: model.state) {
+                                Text(distance).font(.subheadline).foregroundStyle(.secondary)
+                            }
+                        }
+                        Spacer()
+                    }
+                    .padding()
+                    .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 14))
+                }
+                .buttonStyle(.plain)
+            }
+            if model.state.sharingEnabled {
+                Toggle("Share my location", isOn: Binding(
+                    get: { contact.share },
+                    set: { model.setShare(contact.id, $0) }
+                ))
+                .padding()
+                .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 14))
+            }
+        }
+        .padding()
+        .containerRelativeFrame(.vertical, alignment: .top) { length, _ in length * (PanelHeight.medium.fraction + 0.11) }
     }
 }

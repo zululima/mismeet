@@ -10,6 +10,13 @@ struct PersistedState: Codable, Equatable {
     var lastFix: LocationFix?
     var relayListPublishedAt: Date?
     var sharingEnabled = false
+    /// Kept so that the setup checks can show a share that failed in a background wakeup.
+    var lastShareFailure: ShareFailure?
+}
+
+struct ShareFailure: Codable, Equatable {
+    var at: Date
+    var reason: String
 }
 
 extension PersistedState {
@@ -24,6 +31,7 @@ extension PersistedState {
         relayListPublishedAt = try container.decodeIfPresent(Date.self, forKey: .relayListPublishedAt)
         // Before the switch existed, a phone that had published a location was sharing.
         sharingEnabled = try container.decodeIfPresent(Bool.self, forKey: .sharingEnabled) ?? (lastPublishedCreatedAt != nil)
+        lastShareFailure = try container.decodeIfPresent(ShareFailure.self, forKey: .lastShareFailure)
     }
 }
 

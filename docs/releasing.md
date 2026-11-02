@@ -23,11 +23,6 @@ testing track. Only a release goes to the App Store and to Play production, with
 raised as semantic versioning says: patch for fixes, minor for new features, major for a
 protocol change older apps cannot read.
 
-The log on the Me screen shows only in debug builds, TestFlight and Play's closed testing. The
-App Store build is the TestFlight build, and the app checks at launch where it was installed
-from. On Android, Play cannot tell the app which track it came from, so the closed testing
-bundle is built with the log and the production bundle without it.
-
 ## Android release key
 
 Android store builds are signed with a release key kept outside the repository. On Google Play
@@ -107,10 +102,9 @@ For each test build:
    ```
 
 For a release, raise `versionName`, `versionCode` and `CHANGELOG.md`, commit, push and tag as
-above, then build the bundle without the log and put it in a production draft, which you roll
-out under Production in Play Console. The service account then also needs Play's permission to
-release to production, granted under Users and permissions. Never promote a closed testing
-release to production instead, since that bundle shows the log.
+above, then build the bundle and put it in a production draft, which you roll out under
+Production in Play Console. The service account then also needs Play's permission to release to
+production, granted under Users and permissions.
 
 ```bash
 scripts/release.sh upload-android production

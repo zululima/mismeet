@@ -8,11 +8,11 @@
 #   scripts/release.sh archive-ios             check, then archive the iOS app
 #   scripts/release.sh upload-ios              check, archive and upload to App Store Connect, which
 #                                              offers the build in TestFlight and for App Store review
-#   scripts/release.sh upload-android          check, build the bundle with the log and release it to
-#                                              the closed testing track through the Play Developer API
+#   scripts/release.sh upload-android          check, build the bundle and release it to the closed
+#                                              testing track through the Play Developer API
 #   scripts/release.sh upload-android production
-#                                              check, build the bundle without the log and put it in a
-#                                              production draft, rolled out in Play Console
+#                                              check, build the bundle and put it in a production
+#                                              draft, rolled out in Play Console
 set -euo pipefail
 
 root="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
@@ -149,15 +149,15 @@ play_token() {
 }
 
 upload_android() {
-  local tag key token api upload edit code track status test_build
+  local tag key token api upload edit code track status
   case "${1:-}" in
-    "") track=alpha status=completed test_build=1 ;;
-    production) track=production status=draft test_build= ;;
+    "") track=alpha status=completed ;;
+    production) track=production status=draft ;;
     *) echo "upload-android takes no argument or production" >&2; exit 2 ;;
   esac
   tag="$(check android)"
   key="$(cat "$root/android/.play-key")"
-  "$root/android/gradlew" -q -p "$root/android" bundleRelease ${test_build:+-PtestBuild} >&2
+  "$root/android/gradlew" -q -p "$root/android" bundleRelease >&2
   token="$(play_token "$key")"
   api="https://androidpublisher.googleapis.com/androidpublisher/v3/applications/app.mismeet.android"
   upload="https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/app.mismeet.android"

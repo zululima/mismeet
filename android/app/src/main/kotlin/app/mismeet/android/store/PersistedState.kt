@@ -43,11 +43,16 @@ data class PersistedState(
     val lastFix: LocationFix? = null,
     val relayListPublishedAt: Long? = null,
     val sharingEnabled: Boolean = false,
+    /** Kept so that the setup checks can show a share that failed while the app was in the background. */
+    val lastShareFailure: ShareFailure? = null,
 ) {
     companion object {
         val DEFAULT_RELAYS = listOf("wss://relay.damus.io", "wss://nos.lol", "wss://relay.primal.net")
     }
 }
+
+@Serializable
+data class ShareFailure(val at: Long, val reason: String)
 
 class StateStore(private val file: File) {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }

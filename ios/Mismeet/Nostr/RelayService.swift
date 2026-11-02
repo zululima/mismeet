@@ -10,6 +10,16 @@ struct PublishResult: Sendable {
     }
 }
 
+/// One relay as the setup checks found it: `problem` is nil when it answered, and `ownLocationAt` is
+/// the `created_at` of this phone's location event it holds.
+struct RelayCheck: Sendable, Identifiable {
+    let url: String
+    var problem: String?
+    var ownLocationAt: UInt64?
+
+    var id: String { url }
+}
+
 /// One short-lived client per operation: connect, do the work, shut down. Spec section 7.2 and 7.3.
 actor RelayService {
     func publish(event: Event, relayUrls: [String]) async -> PublishResult {
@@ -46,6 +56,44 @@ actor RelayService {
             )
         } catch {
             return []
+        }
+    }
+
+    /// Connects to each relay on its own and asks it for `author`'s location event, all at once.
+    func check(relayUrls: [String], author: PublicKey) async -> [RelayCheck] {
+        await withTaskGroup(of: (Int, RelayCheck).self) { group in
+            for (index, url) in relayUrls.enumerated() {
+                group.addTask { (index, await Self.check(url, author: author)) }
+            }
+            var checks: [(Int, RelayCheck)] = []
+            for await check in group { checks.append(check) }
+            return checks.sorted { $0.0 < $1.0 }.map(\.1)
+        }
+    }
+
+    private static func check(_ text: String, author: PublicKey) async -> RelayCheck {
+        guard let url = try? RelayUrl.parse(url: text) else { return RelayCheck(url: text, problem: "Not a relay address") }
+        let client = ClientBuilder().connectTimeout(timeout: ProtocolConstants.connectTimeoutSeconds).build()
+        defer { Task { await client.shutdown() } }
+        guard (try? await client.addRelay(url: url)) != nil else { return RelayCheck(url: text, problem: "Not a relay address") }
+        let output = await client.tryConnect(timeout: ProtocolConstants.connectTimeoutSeconds)
+        guard !output.success.isEmpty else {
+            return RelayCheck(url: text, problem: output.failed.values.first ?? "No answer within \(Int(ProtocolConstants.connectTimeoutSeconds)) seconds")
+        }
+        let filter = Filter()
+            .kinds(kinds: [Kind(kind: ProtocolConstants.locationKind)])
+            .authors(authors: [author])
+            .identifier(identifier: ProtocolConstants.identifier)
+        do {
+            let events = try await client.fetchEvents(
+                target: ReqTarget.manual(targets: [url: [filter]]),
+                timeout: ProtocolConstants.okTimeoutSeconds,
+                policy: .exitOnEose,
+                maxEvents: nil
+            )
+            return RelayCheck(url: text, ownLocationAt: events.map { $0.createdAt().asSecs() }.max())
+        } catch {
+            return RelayCheck(url: text, problem: "\(error)")
         }
     }
 

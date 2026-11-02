@@ -29,6 +29,7 @@ class LocationService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        running = true
         val channel = NotificationChannel(CHANNEL, "Location sharing", NotificationManager.IMPORTANCE_LOW)
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
@@ -48,6 +49,7 @@ class LocationService : Service() {
     }
 
     override fun onDestroy() {
+        running = false
         scope.cancel()
         super.onDestroy()
     }
@@ -68,6 +70,11 @@ class LocationService : Service() {
     companion object {
         private const val CHANNEL = "location"
         private const val NOTIFICATION_ID = 1
+
+        /** Whether the service is alive in this process, for the setup checks. */
+        @Volatile
+        var running = false
+            private set
 
         fun start(context: Context) {
             context.startForegroundService(Intent(context, LocationService::class.java))

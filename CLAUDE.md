@@ -127,13 +127,11 @@ follows it, and a protocol change edits the spec first, in the same change.
   draft, and rolls that out in Play Console with the user's declarations; testers get it too,
   since Play serves the highest version code of the tracks they are in. Never run `zsp
   publish`, which signs with the user's own Nostr key.
-- The log on the Me screen is for testers: debug builds, TestFlight and Play's closed testing
-  show it, the App Store, Play production and Zapstore never. TestFlight and the App Store get
-  the same binary, so iOS asks `AppTransaction` at launch and shows the log only in its
-  sandbox environment, which is TestFlight. Play cannot tell an app its track, so Android
-  decides at build time: `upload-android` builds with `-PtestBuild`, which turns the log on,
-  and every other release build leaves it off. Never promote a closed testing release to
-  production in Play Console, since it carries the log.
+- The app shows no log in any build; it writes to the system log only (Console.app and
+  logcat). For people, "Check setup" on the Me screen tests what sharing needs, in the style
+  of Slack's connection test: permissions, battery and data restrictions, the last share and
+  its failure, and each relay, by asking it for this phone's own location event. A new reason
+  sharing can fail gets a check there on both platforms.
 - The App Store listing text, from the subtitle and categories to the notes for App Review,
   lives in `design/app-store/listing.md`: change it there and commit, then enter it in App
   Store Connect, never only in the browser.

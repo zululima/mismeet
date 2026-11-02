@@ -4,14 +4,7 @@ import ImageIO
 import NostrSDK
 import Observation
 import OSLog
-import StoreKit
 import UIKit
-
-struct LogLine: Identifiable, Equatable {
-    let id = UUID()
-    let time: Date
-    let text: String
-}
 
 @MainActor
 @Observable
@@ -23,13 +16,13 @@ final class AppModel {
     }
 
     private(set) var state: PersistedState
-    private(set) var log: [LogLine] = []
-    private(set) var showsLog = false
     /// Why an action the user took did not happen, shown in an alert until dismissed.
     var notice: String?
     /// An invite link the app was opened with, until the Add contact sheet takes it.
     var openedInvite: String?
     private(set) var authorization: CLAuthorizationStatus
+    /// False when the user gave Mismeet only an approximate location.
+    private(set) var preciseLocation: Bool
     private(set) var isRefreshing = false
     private(set) var isPublishing = false
     let keys: Keys
@@ -57,11 +50,19 @@ final class AppModel {
         }
         npub = (try? keys.publicKey().toBech32()) ?? keys.publicKey().toHex()
         authorization = location.authorizationStatus
+        preciseLocation = location.preciseLocation
         UIDevice.current.isBatteryMonitoringEnabled = true
         if let startupProblem { log(startupProblem) }
         location.onFix = { [weak self] fix in self?.handle(fix: fix) }
+        location.onFailure = { [weak self] error in
+            guard let self, self.pendingTrigger != nil else { return }
+            self.pendingTrigger = nil
+            self.log("No fix: \(error)")
+            self.shareFailed("Could not get a position")
+        }
         location.onAuthorizationChange = { [weak self] status in
             self?.authorization = status
+            self?.preciseLocation = self?.location.preciseLocation ?? true
             if self?.state.sharingEnabled == true { self?.location.startMonitoringIfAuthorized() }
         }
         if state.sharingEnabled {
@@ -89,18 +90,8 @@ final class AppModel {
                 try? addContact(invite: String(parts[parts.count - 1]), name: name)
             }
         }
-        showsLog = true
-        #else
-        Task { showsLog = await Self.installedFromTestFlight() }
         #endif
         log("Invite: \(inviteLink)")
-    }
-
-    // TestFlight and the App Store install the same binary; only the App Store's record of the
-    // install tells them apart.
-    private static func installedFromTestFlight() async -> Bool {
-        guard case .verified(let transaction)? = try? await AppTransaction.shared else { return false }
-        return transaction.environment == .sandbox
     }
 
     var inviteLink: String {
@@ -161,9 +152,10 @@ final class AppModel {
         guard id != keys.publicKey().toHex() else { throw ContactError.ownKey }
         guard !state.contacts.contains(where: { $0.id == id }) else { throw ContactError.duplicate }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { throw ContactError.noName }
         state.contacts.append(Contact(
             id: id,
-            name: trimmed.isEmpty ? String(npubPrefix(of: invite.publicKey)) : trimmed,
+            name: trimmed,
             relays: invite.relays.map(\.description),
             addedAt: Date()
         ))
@@ -252,12 +244,13 @@ final class AppModel {
     }
 
     enum ContactError: LocalizedError {
-        case ownKey, duplicate
+        case ownKey, duplicate, noName
 
         var errorDescription: String? {
             switch self {
-            case .ownKey: "That is your own key."
+            case .ownKey: "That is your own invite."
             case .duplicate: "That contact is already in the list."
+            case .noName: "Give the contact a name."
             }
         }
     }
@@ -267,7 +260,7 @@ final class AppModel {
     func publishNow() {
         guard state.sharingEnabled else { return }
         guard authorization == .authorizedAlways || authorization == .authorizedWhenInUse else {
-            tell("Location permission is needed to publish")
+            tell("Location permission is needed to share your location")
             return
         }
         pendingTrigger = .manual
@@ -295,6 +288,7 @@ final class AppModel {
         }
         guard Date().timeIntervalSince(fix.time) <= ProtocolConstants.maxFixAgeSeconds else {
             log("Skipped publish: the fix is older than an hour")
+            shareFailed("The newest position was over an hour old")
             return
         }
         let recipients = sharingRecipients()
@@ -313,6 +307,7 @@ final class AppModel {
             await send(event, describing: "Location")
         } catch {
             log("Publish failed: \(error)")
+            shareFailed("Could not build the event")
         }
     }
 
@@ -376,12 +371,23 @@ final class AppModel {
         let result = await relays.publish(event: event, relayUrls: state.relays)
         if result.succeeded.isEmpty {
             log("\(what): no relay accepted it, \(result.summary)")
+            shareFailed("No relay accepted it: \(result.summary)")
         } else {
             state.lastPublishedCreatedAt = event.createdAt().asSecs()
             state.lastPublishedAt = Date()
             save()
             log("\(what): accepted by \(result.succeeded.count) of \(state.relays.count) relays")
         }
+    }
+
+    private func shareFailed(_ reason: String) {
+        state.lastShareFailure = ShareFailure(at: Date(), reason: reason)
+        save()
+    }
+
+    /// Whether each of this phone's relays answers, and the location event of this phone it holds.
+    func checkRelays() async -> [RelayCheck] {
+        await relays.check(relayUrls: state.relays, author: keys.publicKey())
     }
 
     private func sharingRecipients() -> [PublicKey] {
@@ -473,10 +479,6 @@ final class AppModel {
 
     // MARK: Helpers
 
-    private func npubPrefix(of publicKey: PublicKey) -> Substring {
-        ((try? publicKey.toBech32()) ?? publicKey.toHex()).prefix(12)
-    }
-
     private func save() {
         store.save(state)
     }
@@ -491,8 +493,6 @@ final class AppModel {
         #if DEBUG
         FileHandle.standardError.write(Data((text + "\n").utf8))
         #endif
-        log.append(LogLine(time: Date(), text: text))
-        if log.count > 100 { log.removeFirst(log.count - 100) }
     }
 }
 

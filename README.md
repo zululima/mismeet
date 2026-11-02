@@ -10,9 +10,9 @@ its location to relays encrypted for each contact it shares with: no server, no 
 | the protocol both apps follow | Swift and SwiftUI | Kotlin, no Play Services | [development](docs/development.md), [releasing](docs/releasing.md) |
 
 iPhone testers use [TestFlight](https://testflight.apple.com/join/a6MsWGZy). Android testers join
-[mismeet-testers](https://groups.google.com/g/mismeet-testers) (members are hidden), then [opt in](https://play.google.com/apps/testing/app.mismeet.android) with the same
-Google account. Play needs 12 of them for 14 days in a row: 5 are in, 7 to go, and the 14 days
-start once all 12 are.
+[mismeet-testers](https://groups.google.com/g/mismeet-testers) (members are hidden), whose page
+leads on to Google Play. Play needs 12 of them for 14 days in a row: 5 are in, 7 to go, and the
+14 days start once all 12 are.
 
 New here? Paste this into Claude Code:
 
