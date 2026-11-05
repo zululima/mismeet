@@ -5,9 +5,16 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Keep App Privacy at Data Not Collected until build 19 is in review
+## Link the App Store in the README
 
 2026-11-05, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**8.** (answer to: shall I add the App Store link to the README?)
+> Yes, add it
+
+## Keep App Privacy at Data Not Collected until build 19 is in review
+
+2026-11-05, commit [7555069](https://github.com/zululima/mismeet/commit/7555069304501a191e144bac40b2c6c342cc28d1), model claude-opus-5-5, effort xhigh.
 
 **7.**
 > both done [an ask about Chrome's password saving left out]
