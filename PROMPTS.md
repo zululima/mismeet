@@ -5,9 +5,18 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Send opt-in problem reports to a reports key
+## Redo the README and store screenshots
 
 2026-11-05, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**1.** Quoted under [6ee7e21](https://github.com/zululima/mismeet/commit/6ee7e21777cec385e66c90ae0460d213766e45d5).
+
+**4.**
+> signed in
+
+## Send opt-in problem reports to a reports key
+
+2026-11-05, commit [31b5bca](https://github.com/zululima/mismeet/commit/31b5bcacd1eb951b05dc79b1aff1c4e301bad774), model claude-opus-5-5, effort xhigh.
 
 **1.** Quoted under [6ee7e21](https://github.com/zululima/mismeet/commit/6ee7e21777cec385e66c90ae0460d213766e45d5).
 
