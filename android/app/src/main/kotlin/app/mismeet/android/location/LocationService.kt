@@ -40,7 +40,7 @@ class LocationService : Service() {
             loop = scope.launch {
                 val model = AppModel.get(applicationContext)
                 while (isActive) {
-                    LocationProvider.currentFix(applicationContext)?.let { model.onFix(it, AppModel.Trigger.TIMER) }
+                    model.publishFresh(AppModel.Trigger.TIMER)
                     delay(ProtocolConstants.ANDROID_PUBLISH_INTERVAL_SECONDS * 1000)
                 }
             }

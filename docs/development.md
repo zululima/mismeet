@@ -262,8 +262,9 @@ android/gradlew -p android -q :protocol:reports
 
 - Free Apple ID: the provisioning profile expires after seven days, so rebuild and reinstall
   weekly, and at most ten app ids can be registered per seven days.
-- GrapheneOS has no Google location services: the app uses GPS, and the network provider only
-  when GrapheneOS's own network location is turned on in Settings.
+- GrapheneOS has no Google location services: the app uses GPS, and where GPS finds nothing,
+  as indoors, the network provider, which exists only when GrapheneOS's own network location is
+  turned on in Settings.
 - Stock Android, and Android 12 in particular, stops background services it considers
   wasteful. The Me screen offers the battery optimisation exemption; grant it, or the sharing
   service will not survive the screen being off for long.

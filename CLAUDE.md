@@ -379,7 +379,8 @@ sips -Z 600 design/screenshots/<name>.png
   supports.
 - GrapheneOS has no Google location services. The network location provider exists only when the
   user turns on GrapheneOS's own network location in Settings, so rely on `GPS_PROVIDER` and
-  treat `NETWORK_PROVIDER` as optional.
+  treat `NETWORK_PROVIDER` as optional: `LocationProvider.currentFix` asks both at once and takes
+  the network fix only when GPS finds none in time, as indoors.
 - On Android, the location, notification and battery prompts appear and the foreground service
   runs only once "Share my location" is on; the QR scanner asks for the camera when used.
 - `minSdk` is 29, Android 10: `POST_NOTIFICATIONS` exists from API 33, so permission checks for

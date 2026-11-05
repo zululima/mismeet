@@ -251,8 +251,11 @@ class AppModel private constructor(private val context: Context) {
 
     // Publishing
 
-    private suspend fun publishFresh(trigger: Trigger) {
-        LocationProvider.currentFix(context)?.let { onFix(it, trigger) } ?: run {
+    suspend fun publishFresh(trigger: Trigger) {
+        LocationProvider.currentFix(context)?.let {
+            log("Position from ${it.source}, within ${it.fix.horizontalAccuracy.toInt()} m")
+            onFix(it.fix, trigger)
+        } ?: run {
             log("No fix available")
             shareFailed("Could not get a position")
         }

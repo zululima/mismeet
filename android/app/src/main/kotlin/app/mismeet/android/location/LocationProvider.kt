@@ -12,8 +12,13 @@ import android.os.PowerManager
 import androidx.core.location.LocationManagerCompat
 import app.mismeet.protocol.LocationFix
 import kotlin.coroutines.resume
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withTimeoutOrNull
+
+/** A fix and where it came from: `gps`, `network`, or `last known` and either. */
+data class ProvidedFix(val fix: LocationFix, val source: String)
 
 /** Fixes from the platform location manager, never from a fused provider. */
 object LocationProvider {
@@ -33,14 +38,33 @@ object LocationProvider {
     fun isIgnoringBatteryOptimizations(context: Context): Boolean =
         context.getSystemService(PowerManager::class.java)?.isIgnoringBatteryOptimizations(context.packageName) ?: true
 
+    /**
+     * A fresh GPS fix, or where GPS finds nothing in time, as indoors, a fresh one from the network
+     * provider, asked for at the same time; failing both, the newest fix either last gave.
+     */
     @SuppressLint("MissingPermission")
-    suspend fun currentFix(context: Context): LocationFix? {
+    suspend fun currentFix(context: Context): ProvidedFix? {
         if (!hasForegroundPermission(context)) return null
         val manager = context.getSystemService(LocationManager::class.java) ?: return null
-        val provider = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
-            .firstOrNull { manager.isProviderEnabled(it) } ?: return null
-        val location = withTimeoutOrNull(FIX_TIMEOUT_MILLIS) {
-            suspendCancellableCoroutine<Location?> { continuation ->
+        val providers = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER).filter { manager.isProviderEnabled(it) }
+        if (providers.isEmpty()) return null
+        val fresh = coroutineScope {
+            val requests = providers.map { provider -> provider to async { request(context, manager, provider) } }
+            val found = requests.firstNotNullOfOrNull { (provider, request) ->
+                request.await()?.let(::toFix)?.let { ProvidedFix(it, provider) }
+            }
+            requests.forEach { it.second.cancel() }
+            found
+        }
+        return fresh ?: providers.mapNotNull { provider ->
+            runCatching { manager.getLastKnownLocation(provider) }.getOrNull()?.let(::toFix)?.let { ProvidedFix(it, "last known $provider") }
+        }.maxByOrNull { it.fix.timeMillis }
+    }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun request(context: Context, manager: LocationManager, provider: String): Location? =
+        withTimeoutOrNull(FIX_TIMEOUT_MILLIS) {
+            suspendCancellableCoroutine { continuation ->
                 val signal = CancellationSignal()
                 continuation.invokeOnCancellation { signal.cancel() }
                 try {
@@ -49,9 +73,7 @@ object LocationProvider {
                     continuation.resume(null)
                 }
             }
-        } ?: runCatching { manager.getLastKnownLocation(provider) }.getOrNull()
-        return location?.let(::toFix)
-    }
+        }
 
     fun toFix(location: Location): LocationFix? {
         if (!location.hasAccuracy()) return null

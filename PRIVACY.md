@@ -53,7 +53,14 @@ for that one report, to the relays nos.lol and relay.primal.net, which delete it
 Neither the relays nor the developer can tell from the report whose phone sent it; the relays
 see your IP address. The developer keeps reports to fix bugs and shares them with nobody.
 
-## Maps, roads and pictures
+## Your position, maps, roads and pictures
+
+Your own position comes from the phone. On iOS that is Apple's location service. On Android,
+Mismeet asks GPS and, at the same time, the phone's network location when one is turned on,
+and uses the network's answer only when GPS finds nothing in time, as indoors. Network location
+is the phone's own service, such as Google's Location Accuracy or GrapheneOS's network location,
+which works the position out from nearby Wi-Fi networks or cell towers under that service's
+policy. Turn it off in the phone's location settings to keep Mismeet on GPS alone.
 
 On iOS the map comes from Apple Maps, under Apple's privacy policy. On Android it comes from
 OpenStreetMap's tile servers, which see your IP address and the map area you view.

@@ -49,8 +49,23 @@ fun phoneChecks(context: Context, model: AppModel, state: PersistedState, backTo
             "Off for the whole phone.",
             "Open settings" to { openSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS, false) },
         )
-    } else if (manager != null && !manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-        checks += Check("GPS", Outcome.PROBLEM, "Off: Mismeet takes its positions from GPS.")
+    } else if (manager != null) {
+        val locationSettings = "Open settings" to { openSettings(Settings.ACTION_LOCATION_SOURCE_SETTINGS, false) }
+        val gps = manager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        val network = manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        checks += when {
+            gps -> Check("GPS", Outcome.OK, "On")
+            network -> Check("GPS", Outcome.WARNING, "Off: positions come from the network and can be hundreds of metres off.", locationSettings)
+            else -> Check("GPS", Outcome.PROBLEM, "Off, and so is network location: Mismeet needs one of them.", locationSettings)
+        }
+        if (gps) {
+            checks += when {
+                network -> Check("Network location", Outcome.OK, "On: used where GPS finds nothing, such as indoors")
+                LocationManager.NETWORK_PROVIDER in manager.allProviders ->
+                    Check("Network location", Outcome.INFO, "Off: where GPS finds nothing, such as indoors, a share can fail.", locationSettings)
+                else -> Check("Network location", Outcome.INFO, "None on this phone: where GPS finds nothing, such as indoors, a share can fail.")
+            }
+        }
     }
     val coarse = context.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
     checks += when {
