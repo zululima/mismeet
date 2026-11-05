@@ -12,11 +12,35 @@ struct PersistedState: Codable, Equatable {
     var sharingEnabled = false
     /// Kept so that the setup checks can show a share that failed in a background wakeup.
     var lastShareFailure: ShareFailure?
+    /// The name sent with add-back requests, spec section 4.5; empty sends none.
+    var ownName = ""
+    var requests: [StoredRequest] = []
+    /// Senders whose add-back requests the user dismissed, as hex public keys.
+    var dismissedRequests: [String] = []
 }
 
 struct ShareFailure: Codable, Equatable {
     var at: Date
     var reason: String
+}
+
+/// An add-back request waiting for the user, by the sender's hex public key.
+struct StoredRequest: Codable, Equatable, Identifiable {
+    var id: String
+    var invite: String
+    var name: String?
+    var createdAt: UInt64
+
+    init(_ request: AddBackRequest) {
+        id = request.sender.toHex()
+        invite = (try? request.invite.nprofile()) ?? ""
+        name = request.name
+        createdAt = request.createdAt
+    }
+
+    var request: AddBackRequest? {
+        (try? Invite.parse(invite)).map { AddBackRequest(invite: $0, name: name, createdAt: createdAt) }
+    }
 }
 
 extension PersistedState {
@@ -32,6 +56,9 @@ extension PersistedState {
         // Before the switch existed, a phone that had published a location was sharing.
         sharingEnabled = try container.decodeIfPresent(Bool.self, forKey: .sharingEnabled) ?? (lastPublishedCreatedAt != nil)
         lastShareFailure = try container.decodeIfPresent(ShareFailure.self, forKey: .lastShareFailure)
+        ownName = try container.decodeIfPresent(String.self, forKey: .ownName) ?? ""
+        requests = try container.decodeIfPresent([StoredRequest].self, forKey: .requests) ?? []
+        dismissedRequests = try container.decodeIfPresent([String].self, forKey: .dismissedRequests) ?? []
     }
 }
 

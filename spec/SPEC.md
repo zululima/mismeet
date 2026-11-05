@@ -20,6 +20,8 @@ as in RFC 2119.
 - Entry: one NIP-44 ciphertext inside the content of a location event.
 - Real entry: an entry a contact can decrypt. Dummy entry: padding that nobody can decrypt.
 - Fix: one position report from the platform location API.
+- Add-back request: the message of section 4.5, which tells a contact that the user added them
+  and carries the user's own invite.
 
 ## 2. Design summary
 
@@ -30,6 +32,7 @@ as in RFC 2119.
 | Tags | `d` and `expiration` only, never a `p` tag |
 | Expiration | NIP-40, 24 hours after `created_at` |
 | Contacts | Local only, exchanged as `nostr:nprofile` invites, adding is approving |
+| Add-back request | NIP-59 gift wrap to a newly added contact, carrying the adder's invite |
 | Relays | Per-user list, published as NIP-65 kind `10002`; readers query each contact's relays |
 | Keys | One secp256k1 key pair per app install, kept in the platform key store |
 
@@ -90,8 +93,10 @@ the contact has not added the adder, the reader finds no entry it can decrypt an
 contact as not sharing.
 
 Mutual sharing therefore needs each person to add the other. One-way sharing needs only one
-side to add. Nothing is sent to anyone when a contact is added or removed, and the protocol has
-no request or acceptance message: the only signal a contact gets is whether an entry decrypts.
+side to add. When a contact is added, the adder's device sends them one add-back request
+(section 4.5), so that they can add the adder back without a second invite. The request approves
+nothing and has no answer: whether an entry decrypts stays the only signal of sharing. Nothing is
+sent when a contact is removed.
 
 ### 4.3 Contact record
 
@@ -101,6 +106,7 @@ Each contact record holds, locally only:
 - display name,
 - relay URLs, from the invite and later from kind `10002` (section 7.1),
 - `share` flag,
+- whether its add-back request was sent or is not needed (section 4.5),
 - the latest decrypted payload with its event `created_at` and event id (section 8.4).
 
 The contact list never leaves the device. Backup of the contact list is out of scope for
@@ -110,6 +116,47 @@ version 1.
 
 Removing a contact, or switching `share` off, triggers a publish without that contact
 (section 8.5). Data the removed contact already fetched stays on their device.
+
+### 4.5 Add-back request
+
+An add-back request tells a contact that the user added them and carries the user's own invite,
+so that the contact adds the user back with one confirmation instead of asking for a link.
+
+The request is a NIP-59 gift wrap: a kind `1059` event signed by a throwaway key, with one `p`
+tag naming the contact and a NIP-40 `expiration` tag, whose content seals a rumor for the contact
+with NIP-44. The seal, kind `13`, is signed by the user's key. The rumor is unsigned, kind `1122`,
+with the user's public key, the time of sending as `created_at`, no tags, and this content:
+
+```json
+{"v":1,"invite":"nprofile1...","name":"Akira"}
+```
+
+- `v` is `1`.
+- `invite` is the user's `nprofile` with up to four of the user's relays, as in section 4.1.
+- `name` is the name the user gave themselves on the device, at most 64 characters, and is
+  omitted when they gave none.
+
+The wrap's `created_at` is randomised up to two days into the past, as NIP-59 says, and its
+`expiration` is that `created_at` plus 30 days.
+
+A device sends a request:
+
+- only while sharing is on (section 8.1), so contacts added while it was off get theirs when it
+  is turned on;
+- to a contact whose `share` flag is on, once per contact;
+- not to a contact added back from that contact's own request, nor to one already seen sharing
+  with the user, since both have added the user;
+- to the contact's relay set (section 7.1), succeeding when one relay answers `OK` with `true`.
+
+A device reads requests from its own relays whenever it fetches (section 8.2), with one filter of
+`kinds` `[1059]`, `#p` its own key and `limit` 100, on connections apart from the location fetch,
+so that no relay sees the device's key in the same subscription as the authors it asks about
+(section 7.3). It discards a wrap that has expired, that it
+cannot unwrap, whose rumor is not kind `1122` or not by the seal's key, whose `v` is not `1`,
+whose `invite` names another key, or that came from itself. It keeps the newest request per
+sender and shows those whose sender is not a contact and has not been dismissed by the user.
+Adding back creates a contact as in section 4.2, with the invite filled in and the name offered
+for the user to confirm or change; a request never adds a contact by itself.
 
 ## 5. Location event
 
@@ -294,7 +341,8 @@ reads that event as in section 5.5.
 
 Readers do not authenticate to relays (NIP-42) in version 1, because authenticating would tell
 the relay which key is asking about which authors. A relay that demands `AUTH` to serve the
-event is unusable for reading; section 13 records this.
+event is unusable for reading; section 13 records this. Add-back requests are fetched in the
+same way, unauthenticated, with the filter of section 4.5.
 
 ### 7.4 Relay requirements
 
@@ -306,17 +354,23 @@ A relay is suitable when it:
 - allows events of at least 32 KB (NIP-11 `limitation.max_message_length` and
   `max_content_length`, when published),
 - preferably lists NIP-40 in its NIP-11 `supported_nips`,
-- serves events to unauthenticated readers.
+- serves events to unauthenticated readers,
+- accepts kind `1059` from any public key and serves it by `#p` to unauthenticated readers, for
+  add-back requests (section 4.5).
 
 The app's default relays are chosen against this list. Candidate defaults, to be verified
 against it before release: `wss://relay.damus.io`, `wss://nos.lol`, `wss://relay.primal.net`.
+On 2026-11-05 nos.lol and relay.primal.net served a kind `1059` to anyone asking by `#p` and by
+id, while relay.damus.io accepted it and served it to nobody, with or without `AUTH`; requests
+to a default user therefore reach them through the other two.
 
 ## 8. Client behaviour
 
 ### 8.1 When to publish
 
 Sharing is off until the user turns it on. Until then the device only watches its contacts: it
-publishes nothing, kind `10002` included, and needs no location permission. Turning sharing
+publishes nothing, kind `10002` and add-back requests included, and needs no location
+permission. Turning sharing
 off counts as switching `share` off for every contact (section 8.3).
 
 A publisher publishes when:
@@ -340,7 +394,8 @@ follow the phone's movement; section 9 lists this leak.
 ### 8.2 When to fetch
 
 A reader fetches when the app comes to the foreground, when the user asks for a refresh, and
-every 60 seconds while the contact list or map is on screen. There is no background fetching
+every 60 seconds while the contact list or map is on screen. Each fetch also asks for add-back
+requests (section 4.5), also while the user has no contacts yet. There is no background fetching
 on either platform in version 1.
 
 ### 8.3 Revocation and the empty recipient set
@@ -464,12 +519,17 @@ What a relay operator, or anyone reading the relay, learns from the protocol:
 - when it publishes, which on iOS correlates with movement (section 8.1);
 - a bucketed count of recipients: 4, 8, 16, 32 or 64;
 - the reader's IP address and the authors it asks about on that relay, at fetch time, without
-  the reader's key (section 7.3).
+  the reader's key (section 7.3);
+- that some key sent a kind `1059` to a public key, within two days of when, and that this
+  public key asks for its own: the wrap names the recipient in its `p` tag and is signed by a
+  throwaway key (section 4.5). Kind `1059` also carries NIP-17 direct messages, so the wrap alone
+  does not mark the recipient as a Mismeet user.
 
 What they do not learn:
 
 - any location, past or present;
 - who the recipients are, or whether two keys are contacts, from the events alone;
+- who sent an add-back request, or what it holds;
 - the exact number of recipients.
 
 Other properties:
@@ -495,6 +555,12 @@ Other properties:
 | --- | --- |
 | Event kind | `31122` |
 | `d` tag | `location` |
+| Gift wrap kind | `1059` |
+| Add-back rumor kind | `1122` |
+| Add-back content version | `1` |
+| Add-back expiration | wrap `created_at + 2592000` seconds |
+| Add-back requests fetched per relay | at most 100 |
+| Name given in an add-back request | at most 64 characters |
 | Content version | `1` |
 | Payload version | `1` |
 | Expiration | `created_at + 86400` seconds |
@@ -554,11 +620,14 @@ platform, and the protocol constants live in a single constants file per platfor
 8. A reader sends each relay only the authors associated with that relay.
 9. Invites round-trip through the invite link and `nostr:nprofile` with up to four relays, and
    the earlier invite link and `npub` input are accepted.
-10. Nothing is ever published except kinds `31122` and `10002`.
+10. Nothing is ever published except kinds `31122` and `10002`, and kind `1059` add-back
+    requests.
 11. An estimate follows section 8.6: the mode from `spd`, the ways each mode may use, the
     snap, the least turn at each node, and the speed, span and age limits.
 12. A place name follows section 8.7: the cells loaded, the place values and their order of
     preference, the 5 km limit and the tie rule.
+13. An add-back request follows section 4.5: the content, the wrap's kinds, tags and expiration,
+    each reason to discard one, and the newest request per sender.
 
 ## 13. Deviations from NIPs and open questions for review
 
@@ -581,8 +650,15 @@ platform, and the protocol constants live in a single constants file per platfor
    movement in publish timing. iOS cannot offer the same.
 7. Default relays need verification against section 7.4 before release.
 8. Out of scope for version 1, possibly later: per-contact precision (coarse location for
-   some contacts), an in-band contact request flow, key import, backup and rotation, multiple
-   devices under one key, publishing through Tor.
+   some contacts), key import, backup and rotation, multiple devices under one key, publishing
+   through Tor.
+9. Kind `1122`, the add-back rumor, is not registered either. It never reaches a relay on its own,
+   only sealed inside a gift wrap that one key can open, so a collision would matter only to a
+   client opening Mismeet's wraps with a Mismeet key, which is never imported elsewhere
+   (section 3).
+10. The add-back request uses NIP-59 without NIP-17: it is no direct message, and it goes to the
+    contact's relay set rather than to kind `10050` inbox relays, which Mismeet users do not
+    publish.
 
 ## 14. References
 
@@ -594,6 +670,7 @@ platform, and the protocol constants live in a single constants file per platfor
 - NIP-40, expiration timestamp: https://github.com/nostr-protocol/nips/blob/master/40.md
 - NIP-42, client authentication: https://github.com/nostr-protocol/nips/blob/master/42.md
 - NIP-44, versioned encryption: https://github.com/nostr-protocol/nips/blob/master/44.md
+- NIP-59, gift wrap: https://github.com/nostr-protocol/nips/blob/master/59.md
 - NIP-65, relay list metadata: https://github.com/nostr-protocol/nips/blob/master/65.md
 - NIP-78, application-specific data (rejected, see section 13):
   https://github.com/nostr-protocol/nips/blob/master/78.md

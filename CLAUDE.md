@@ -51,7 +51,8 @@ follows it, and a protocol change edits the spec first, in the same change.
   `android/protocol/src/main/kotlin/app/mismeet/protocol/ProtocolConstants.kt` and match the
   table in the spec, section 10. The conformance checklist in section 12 is a unit test on each
   platform, under `ios/MismeetTests` and `android/protocol/src/test`.
-- Nothing but kinds `31122` and `10002` is ever published. No profile, no contact list, no DMs.
+- Nothing but kinds `31122` and `10002` and the kind `1059` add-back requests of spec section
+  4.5 is ever published. No profile, no contact list, no DMs.
 - Publishing is opt-in and off by default on both platforms (spec section 8.1): the phone then
   only watches its contacts, publishes nothing, not even its relay list, and needs no location
   permission. The "Share my location" switch on the Me screen turns it on. Keep every
@@ -322,7 +323,8 @@ xcrun simctl spawn booted log show --info --last 5m --predicate 'subsystem == "a
 
 Publish a location for that invite. The publisher prints its own invite, writes it as
 `android/protocol/build/<name>-invite.png` for a phone to scan, and keeps its key under
-`android/protocol/build/`, so a rerun moves the same contact. `MISMEET_FAKE_NAME=other` in front
+`android/protocol/build/`, so a rerun moves the same contact. The first run for a reader also
+sends it an add-back request named after the key. `MISMEET_FAKE_NAME=other` in front
 makes a second publisher, several reader invites go comma-separated, `-` as the invite only
 creates the key, and relays may follow the coordinates:
 

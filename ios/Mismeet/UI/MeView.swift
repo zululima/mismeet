@@ -26,7 +26,15 @@ struct MeView: View {
                 } header: {
                     Text("Invite")
                 } footer: {
-                    Text("Send the link, or let them scan the code. Each of you adds the other's invite, and you see each other once both have.")
+                    Text("Send the link, or let them scan the code. When they add you with sharing on, your contacts show a request to add them back.")
+                }
+                Section {
+                    TextField("Your name", text: Binding(get: { model.state.ownName }, set: { model.setOwnName($0) }))
+                        .textContentType(.givenName)
+                } header: {
+                    Text("Your name")
+                } footer: {
+                    Text("Sent to the people you add, so they know who asks to be added back.")
                 }
                 Section("Sharing from this phone") {
                     Toggle("Share my location", isOn: Binding(

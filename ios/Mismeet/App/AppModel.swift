@@ -25,6 +25,7 @@ final class AppModel {
     private(set) var preciseLocation: Bool
     private(set) var isRefreshing = false
     private(set) var isPublishing = false
+    @ObservationIgnored private var isSendingRequests = false
     let keys: Keys
     let npub: String
     let roads = RoadData()
@@ -95,8 +96,16 @@ final class AppModel {
     }
 
     var inviteLink: String {
-        let urls = state.relays.compactMap { try? RelayUrl.parse(url: $0) }
-        return (try? Invite(publicKey: keys.publicKey(), relays: urls).link()) ?? ProtocolConstants.inviteLinkPrefix + npub
+        (try? ownInvite.link()) ?? ProtocolConstants.inviteLinkPrefix + npub
+    }
+
+    private var ownInvite: Invite {
+        Invite(publicKey: keys.publicKey(), relays: state.relays.compactMap { try? RelayUrl.parse(url: $0) })
+    }
+
+    func setOwnName(_ name: String) {
+        state.ownName = String(name.prefix(ProtocolConstants.maxNameLength))
+        save()
     }
 
     var authorizationText: String {
@@ -131,7 +140,10 @@ final class AppModel {
         state.sharingEnabled = enabled
         save()
         if enabled {
-            Task { await publishRelayList() }
+            Task {
+                await publishRelayList()
+                await sendAddBackRequests()
+            }
             if authorization == .notDetermined { location.requestAuthorization() }
             location.startMonitoringIfAuthorized()
             if authorization == .authorizedAlways || authorization == .authorizedWhenInUse {
@@ -153,15 +165,21 @@ final class AppModel {
         guard !state.contacts.contains(where: { $0.id == id }) else { throw ContactError.duplicate }
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw ContactError.noName }
-        state.contacts.append(Contact(
-            id: id,
-            name: trimmed,
-            relays: invite.relays.map(\.description),
-            addedAt: Date()
-        ))
+        var contact = Contact(id: id, name: trimmed, relays: invite.relays.map(\.description), addedAt: Date())
+        // Whoever sent a request has added this phone already.
+        contact.addBackDone = state.requests.contains { $0.id == id }
+        state.contacts.append(contact)
+        state.requests.removeAll { $0.id == id }
         save()
         recipientsChanged()
         Task { await refresh() }
+    }
+
+    /// Hides an add-back request for good; adding the sender from their invite still works.
+    func dismissRequest(_ id: String) {
+        state.requests.removeAll { $0.id == id }
+        if !state.dismissedRequests.contains(id) { state.dismissedRequests.append(id) }
+        save()
     }
 
     func removeContacts(at offsets: IndexSet) {
@@ -241,6 +259,7 @@ final class AppModel {
         state.contacts[index].share = share
         save()
         recipientsChanged()
+        if share { Task { await sendAddBackRequests() } }
     }
 
     enum ContactError: LocalizedError {
@@ -400,13 +419,85 @@ final class AppModel {
         return level >= 0 ? Double(level) : nil
     }
 
+    /// Spec section 4.5: asks each contact this phone shares with to add it back, once, unless the
+    /// contact already shares with it. Runs after each refresh, which tells which do.
+    private func sendAddBackRequests() async {
+        guard state.sharingEnabled, !isSendingRequests else { return }
+        isSendingRequests = true
+        defer { isSendingRequests = false }
+        let invite = ownInvite
+        for contact in state.contacts where contact.share && !contact.addBackDone {
+            if contact.sharing == .sharing {
+                markAddBackDone(contact.id)
+                continue
+            }
+            guard let receiver = contact.publicKey else { continue }
+            let wrap: Event
+            do {
+                wrap = try AddBackRequest.wrap(
+                    invite: invite, name: state.ownName, keys: keys, receiver: receiver,
+                    now: UInt64(Date().timeIntervalSince1970)
+                )
+            } catch {
+                log("Add-back request to \(contact.name) failed: \(error)")
+                continue
+            }
+            let relayUrls = contact.queryRelays(defaults: state.relays).map(\.description)
+            let result = await relays.publish(event: wrap, relayUrls: relayUrls)
+            if result.succeeded.isEmpty {
+                log("Add-back request to \(contact.name): no relay accepted it, \(result.summary)")
+            } else {
+                markAddBackDone(contact.id)
+                log("Add-back request to \(contact.name): accepted by \(result.succeeded.count) of \(relayUrls.count) relays")
+            }
+        }
+    }
+
+    private func markAddBackDone(_ id: String) {
+        guard let index = state.contacts.firstIndex(where: { $0.id == id }) else { return }
+        state.contacts[index].addBackDone = true
+        save()
+    }
+
     // MARK: Reading
 
     func refresh() async {
-        guard !isRefreshing, !state.contacts.isEmpty else { return }
+        guard !isRefreshing else { return }
         isRefreshing = true
-        defer { isRefreshing = false }
+        async let requests: Void = fetchRequests()
+        if !state.contacts.isEmpty { await fetchLocations() }
+        // A relay that never ends the request query holds it to the timeout; the spinner stops
+        // once the locations are in.
+        isRefreshing = false
+        await requests
+        await sendAddBackRequests()
+    }
 
+    /// Spec section 4.5: the add-back requests addressed to this phone, on connections of their
+    /// own, so that no relay sees this phone's key beside the authors it asks about.
+    private func fetchRequests() async {
+        let filter = Filter()
+            .kinds(kinds: [Kind(kind: ProtocolConstants.giftWrapKind)])
+            .pubkey(pubkey: keys.publicKey())
+            .limit(limit: ProtocolConstants.addBackFetchLimit)
+        var targets: [RelayUrl: [Filter]] = [:]
+        for url in state.relays.compactMap({ try? RelayUrl.parse(url: $0) }) { targets[url] = [filter] }
+        guard !targets.isEmpty else { return }
+        let now = UInt64(Date().timeIntervalSince1970)
+        let fetched = await relays.fetch(targets: targets).compactMap { try? AddBackRequest.read($0, keys: keys, now: now) }
+        let contacts = Set(state.contacts.map(\.id))
+        let oldest = now - ProtocolConstants.addBackExpirationSeconds
+        state.requests = AddBackRequest.newestPerSender(state.requests.compactMap(\.request) + fetched)
+            .filter { request in
+                let id = request.sender.toHex()
+                return !contacts.contains(id) && !state.dismissedRequests.contains(id) && request.createdAt > oldest
+            }
+            .map(StoredRequest.init)
+        save()
+        log("Add-back requests: \(fetched.count) read, \(state.requests.count) waiting")
+    }
+
+    private func fetchLocations() async {
         let now = Date()
         let due = Set(state.contacts.filter { contact in
             contact.relayListCheckedAt.map { now.timeIntervalSince($0) > Double(ProtocolConstants.relayListRefreshSeconds) } ?? true

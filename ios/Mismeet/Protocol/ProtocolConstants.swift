@@ -4,6 +4,12 @@ import Foundation
 enum ProtocolConstants {
     static let locationKind: UInt16 = 31122
     static let relayListKind: UInt16 = 10002
+    static let giftWrapKind: UInt16 = 1059
+    static let addBackKind: UInt16 = 1122
+    static let addBackVersion = 1
+    static let addBackExpirationSeconds: UInt64 = 2_592_000
+    static let addBackFetchLimit: UInt64 = 100
+    static let maxNameLength = 64
     static let identifier = "location"
     static let contentVersion = 1
     static let payloadVersion = 1

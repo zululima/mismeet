@@ -24,6 +24,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -101,8 +102,16 @@ fun MeScreen(model: AppModel, modifier: Modifier = Modifier) {
             }) { Text("Copy link") }
         }
         Text(
-            "Send the link, or let them scan the code. Each of you adds the other's invite, and you see each other once both have.",
+            "Send the link, or let them scan the code. When they add you with sharing on, your contacts show a request to add them back.",
             style = MaterialTheme.typography.bodySmall,
+        )
+        OutlinedTextField(
+            value = state.ownName,
+            onValueChange = { model.setOwnName(it) },
+            label = { Text("Your name") },
+            supportingText = { Text("Sent to the people you add, so they know who asks to be added back.") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
         )
 
         Text("Sharing from this phone", style = MaterialTheme.typography.titleMedium)

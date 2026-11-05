@@ -19,6 +19,8 @@ import app.mismeet.android.store.Contact
 import app.mismeet.android.store.PersistedState
 import app.mismeet.android.store.ShareFailure
 import app.mismeet.android.store.StateStore
+import app.mismeet.android.store.StoredRequest
+import app.mismeet.protocol.AddBackRequest
 import app.mismeet.protocol.ContactRelays
 import app.mismeet.protocol.Invite
 import app.mismeet.protocol.LatLon
@@ -36,6 +38,7 @@ import kotlin.math.min
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -77,6 +80,7 @@ class AppModel private constructor(private val context: Context) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val publishing = Mutex()
     private val refreshing = Mutex()
+    private val requesting = Mutex()
     private val photos = ConcurrentHashMap<String, Pair<Long, Bitmap>>()
     val roads = RoadData(context)
     private val places = PlaceData(context)
@@ -91,9 +95,13 @@ class AppModel private constructor(private val context: Context) {
         log("Invite: ${inviteLink()}")
     }
 
-    fun inviteLink(): String {
-        val urls = _state.value.relays.mapNotNull { runCatching { RelayUrl.parse(it) }.getOrNull() }
-        return runCatching { Invite(keys.publicKey(), urls).link() }.getOrDefault(ProtocolConstants.INVITE_LINK_PREFIX + npub)
+    fun inviteLink(): String =
+        runCatching { ownInvite().link() }.getOrDefault(ProtocolConstants.INVITE_LINK_PREFIX + npub)
+
+    private fun ownInvite() = Invite(keys.publicKey(), _state.value.relays.mapNotNull { runCatching { RelayUrl.parse(it) }.getOrNull() })
+
+    fun setOwnName(name: String) {
+        update { it.copy(ownName = name.take(ProtocolConstants.MAX_NAME_LENGTH)) }
     }
 
     // Lifecycle
@@ -118,7 +126,10 @@ class AppModel private constructor(private val context: Context) {
         if (_state.value.sharingEnabled == enabled) return
         update { it.copy(sharingEnabled = enabled) }
         if (enabled) {
-            scope.launch { publishRelayList() }
+            scope.launch {
+                publishRelayList()
+                sendAddBackRequests()
+            }
             if (LocationProvider.hasForegroundPermission(context)) LocationService.start(context)
         } else {
             LocationService.stop(context)
@@ -161,10 +172,19 @@ class AppModel private constructor(private val context: Context) {
             name = trimmed,
             relays = invite.relays.map { it.toString() },
             addedAt = System.currentTimeMillis(),
+            // Whoever sent a request has added this phone already.
+            addBackDone = _state.value.requests.any { it.id == id },
         )
-        update { it.copy(contacts = it.contacts + contact) }
+        update { state -> state.copy(contacts = state.contacts + contact, requests = state.requests.filterNot { it.id == id }) }
         recipientsChanged()
         scope.launch { refresh() }
+    }
+
+    /** Hides an add-back request for good; adding the sender from their invite still works. */
+    fun dismissRequest(id: String) {
+        update { state ->
+            state.copy(requests = state.requests.filterNot { it.id == id }, dismissedRequests = (state.dismissedRequests + id).distinct())
+        }
     }
 
     fun removeContact(id: String) {
@@ -219,6 +239,7 @@ class AppModel private constructor(private val context: Context) {
         }
         update { s -> s.copy(contacts = s.contacts.map { if (it.id == id) it.copy(share = share) else it }) }
         recipientsChanged()
+        if (share) scope.launch { sendAddBackRequests() }
     }
 
     // Publishing
@@ -332,85 +353,152 @@ class AppModel private constructor(private val context: Context) {
         return if (percent in 0..100) percent / 100.0 else null
     }
 
+    /**
+     * Spec section 4.5: asks each contact this phone shares with to add it back, once, unless
+     * the contact already shares with it. Runs after each refresh, which tells which do.
+     */
+    private suspend fun sendAddBackRequests() {
+        if (requesting.isLocked) return
+        requesting.withLock {
+            val current = _state.value
+            if (!current.sharingEnabled) return
+            val invite = ownInvite()
+            for (contact in current.contacts.filter { it.share && !it.addBackDone }) {
+                if (contact.sharing == Contact.SharingStatus.SHARING) {
+                    addBackDone(contact.id)
+                    continue
+                }
+                val receiver = contact.publicKey() ?: continue
+                val wrap = runCatching { AddBackRequest.wrap(invite, current.ownName, keys, receiver, System.currentTimeMillis() / 1000) }
+                    .onFailure { log("Add-back request to ${contact.name} failed: ${it.message}") }
+                    .getOrNull() ?: continue
+                val relayUrls = contact.queryRelays(current.relays).map { it.toString() }
+                val result = relays.publish(wrap, relayUrls)
+                if (result.succeeded.isEmpty()) {
+                    log("Add-back request to ${contact.name}: no relay accepted it, ${result.summary}")
+                } else {
+                    addBackDone(contact.id)
+                    log("Add-back request to ${contact.name}: accepted by ${result.succeeded.size} of ${relayUrls.size} relays")
+                }
+            }
+        }
+    }
+
+    private fun addBackDone(id: String) {
+        update { state -> state.copy(contacts = state.contacts.map { if (it.id == id) it.copy(addBackDone = true) else it }) }
+    }
+
     // Reading
 
     suspend fun refresh() {
-        if (_state.value.contacts.isEmpty() || refreshing.isLocked) return
+        if (refreshing.isLocked) return
         refreshing.withLock {
-            val current = _state.value
-            val now = System.currentTimeMillis()
-            val due = current.contacts.filter { contact ->
-                contact.relayListCheckedAt?.let { now - it > ProtocolConstants.RELAY_LIST_REFRESH_SECONDS * 1000 } ?: true
-            }.map { it.id }.toSet()
-            val plan = RelayPlan.authorsByRelay(current.contacts.mapNotNull { contact ->
-                contact.publicKey()?.let { ContactRelays(it, contact.queryRelays(current.relays)) }
-            })
-            val targets = plan.mapValues { (_, authors) ->
-                val filters = mutableListOf(
-                    Filter()
-                        .kinds(listOf(Kind(ProtocolConstants.LOCATION_KIND)))
-                        .authors(authors)
-                        .identifier(ProtocolConstants.IDENTIFIER),
-                )
-                val dueAuthors = authors.filter { it.toHex() in due }
-                if (dueAuthors.isNotEmpty()) {
-                    filters += Filter().kinds(listOf(Kind(ProtocolConstants.RELAY_LIST_KIND))).authors(dueAuthors)
-                }
-                filters.toList()
+            coroutineScope {
+                launch { fetchRequests() }
+                if (_state.value.contacts.isNotEmpty()) fetchLocations()
             }
-            val events = relays.fetch(targets)
-            val nowSeconds = now / 1000
-            var decoded = 0
-            var unchanged = 0
-            val fetched = current.contacts.map { contact ->
-                val publicKey = contact.publicKey() ?: return@map contact
-                val own = events.filter { it.author().toHex() == contact.id }
-                var updated = contact
-                if (contact.id in due) {
-                    val list = own.filter { it.kind().asU16() == ProtocolConstants.RELAY_LIST_KIND }
-                        .maxByOrNull { it.createdAt().asSecs() }
-                    val urls = list?.let { RelayList.writeRelays(it) }.orEmpty()
-                    updated = updated.copy(relays = urls.ifEmpty { contact.relays }, relayListCheckedAt = now)
-                }
-                val locations = own.filter { it.kind().asU16() == ProtocolConstants.LOCATION_KIND }
-                val newest = LocationEventReader.newest(locations, nowSeconds, contact.lastCreatedAt)
-                if (newest == null) {
-                    if (locations.isNotEmpty()) unchanged++
-                    return@map updated
-                }
-                runCatching { LocationEventReader.read(newest, publicKey, keys, nowSeconds) }
-                    .onFailure { log("Ignored an event from ${contact.name}: ${it.message}") }
-                    .getOrNull()
-                    ?.let { result ->
-                        updated = when (result) {
-                            is LocationReadResult.Shared -> {
-                                decoded++
-                                updated.copy(lastPayload = result.payload, lastSeenAt = now, sharing = Contact.SharingStatus.SHARING)
-                            }
-                            LocationReadResult.NotSharing -> updated.copy(sharing = Contact.SharingStatus.NOT_SHARING)
-                        }.copy(lastCreatedAt = newest.createdAt().asSecs().toLong(), lastEventId = newest.id().toHex())
-                    }
-                updated
-            }.associateBy { it.id }
-            // Contacts added, removed, renamed or toggled during the fetch stay as they are now;
-            // only the fields read from the relays come from the fetch.
-            update { state ->
-                state.copy(contacts = state.contacts.map { live ->
-                    fetched[live.id]?.let {
-                        live.copy(
-                            relays = it.relays,
-                            relayListCheckedAt = it.relayListCheckedAt,
-                            sharing = it.sharing,
-                            lastPayload = it.lastPayload,
-                            lastSeenAt = it.lastSeenAt,
-                            lastCreatedAt = it.lastCreatedAt,
-                            lastEventId = it.lastEventId,
-                        )
-                    } ?: live
-                })
-            }
-            log("Refreshed from ${targets.size} relays: $decoded new, $unchanged unchanged since last time, ${current.contacts.size - decoded - unchanged} without an event")
         }
+        sendAddBackRequests()
+    }
+
+    /**
+     * Spec section 4.5: the add-back requests addressed to this phone, on connections of their
+     * own, so that no relay sees this phone's key beside the authors it asks about.
+     */
+    private suspend fun fetchRequests() {
+        val filter = Filter()
+            .kinds(listOf(Kind(ProtocolConstants.GIFT_WRAP_KIND)))
+            .pubkey(keys.publicKey())
+            .limit(ProtocolConstants.ADD_BACK_FETCH_LIMIT.toULong())
+        val targets = _state.value.relays.mapNotNull { runCatching { RelayUrl.parse(it) }.getOrNull() }.associateWith { listOf(filter) }
+        if (targets.isEmpty()) return
+        val now = System.currentTimeMillis() / 1000
+        val fetched = relays.fetch(targets).mapNotNull { runCatching { AddBackRequest.read(it, keys, now) }.getOrNull() }
+        update { state ->
+            val contacts = state.contacts.map { it.id }.toSet()
+            val requests = AddBackRequest.newestPerSender(state.requests.mapNotNull { it.request() } + fetched).filter {
+                val id = it.sender.toHex()
+                id !in contacts && id !in state.dismissedRequests && it.createdAt > now - ProtocolConstants.ADD_BACK_EXPIRATION_SECONDS
+            }
+            state.copy(requests = requests.map { StoredRequest.of(it) })
+        }
+        log("Add-back requests: ${fetched.size} read, ${_state.value.requests.size} waiting")
+    }
+
+    private suspend fun fetchLocations() {
+        val current = _state.value
+        val now = System.currentTimeMillis()
+        val due = current.contacts.filter { contact ->
+            contact.relayListCheckedAt?.let { now - it > ProtocolConstants.RELAY_LIST_REFRESH_SECONDS * 1000 } ?: true
+        }.map { it.id }.toSet()
+        val plan = RelayPlan.authorsByRelay(current.contacts.mapNotNull { contact ->
+            contact.publicKey()?.let { ContactRelays(it, contact.queryRelays(current.relays)) }
+        })
+        val targets = plan.mapValues { (_, authors) ->
+            val filters = mutableListOf(
+                Filter()
+                    .kinds(listOf(Kind(ProtocolConstants.LOCATION_KIND)))
+                    .authors(authors)
+                    .identifier(ProtocolConstants.IDENTIFIER),
+            )
+            val dueAuthors = authors.filter { it.toHex() in due }
+            if (dueAuthors.isNotEmpty()) {
+                filters += Filter().kinds(listOf(Kind(ProtocolConstants.RELAY_LIST_KIND))).authors(dueAuthors)
+            }
+            filters.toList()
+        }
+        val events = relays.fetch(targets)
+        val nowSeconds = now / 1000
+        var decoded = 0
+        var unchanged = 0
+        val fetched = current.contacts.map { contact ->
+            val publicKey = contact.publicKey() ?: return@map contact
+            val own = events.filter { it.author().toHex() == contact.id }
+            var updated = contact
+            if (contact.id in due) {
+                val list = own.filter { it.kind().asU16() == ProtocolConstants.RELAY_LIST_KIND }
+                    .maxByOrNull { it.createdAt().asSecs() }
+                val urls = list?.let { RelayList.writeRelays(it) }.orEmpty()
+                updated = updated.copy(relays = urls.ifEmpty { contact.relays }, relayListCheckedAt = now)
+            }
+            val locations = own.filter { it.kind().asU16() == ProtocolConstants.LOCATION_KIND }
+            val newest = LocationEventReader.newest(locations, nowSeconds, contact.lastCreatedAt)
+            if (newest == null) {
+                if (locations.isNotEmpty()) unchanged++
+                return@map updated
+            }
+            runCatching { LocationEventReader.read(newest, publicKey, keys, nowSeconds) }
+                .onFailure { log("Ignored an event from ${contact.name}: ${it.message}") }
+                .getOrNull()
+                ?.let { result ->
+                    updated = when (result) {
+                        is LocationReadResult.Shared -> {
+                            decoded++
+                            updated.copy(lastPayload = result.payload, lastSeenAt = now, sharing = Contact.SharingStatus.SHARING)
+                        }
+                        LocationReadResult.NotSharing -> updated.copy(sharing = Contact.SharingStatus.NOT_SHARING)
+                    }.copy(lastCreatedAt = newest.createdAt().asSecs().toLong(), lastEventId = newest.id().toHex())
+                }
+            updated
+        }.associateBy { it.id }
+        // Contacts added, removed, renamed or toggled during the fetch stay as they are now;
+        // only the fields read from the relays come from the fetch.
+        update { state ->
+            state.copy(contacts = state.contacts.map { live ->
+                fetched[live.id]?.let {
+                    live.copy(
+                        relays = it.relays,
+                        relayListCheckedAt = it.relayListCheckedAt,
+                        sharing = it.sharing,
+                        lastPayload = it.lastPayload,
+                        lastSeenAt = it.lastSeenAt,
+                        lastCreatedAt = it.lastCreatedAt,
+                        lastEventId = it.lastEventId,
+                    )
+                } ?: live
+            })
+        }
+        log("Refreshed from ${targets.size} relays: $decoded new, $unchanged unchanged since last time, ${current.contacts.size - decoded - unchanged} without an event")
     }
 
     suspend fun updatePlaceNames() {

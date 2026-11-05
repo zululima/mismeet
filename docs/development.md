@@ -144,8 +144,10 @@ xcrun simctl spawn booted log show --info --last 5m --predicate 'subsystem == "a
 
 Publish a location for that invite; the tool prints the fake publisher's own invite and a QR
 code to add on the watching app, and keeps its key under `android/protocol/build/` so that
-later runs move the same contact. `MISMEET_FAKE_NAME=other` in the environment makes a second
-publisher, several readers go comma-separated, and `-` as the reader publishes nothing but
+later runs move the same contact. The first run for a reader also sends it an add-back request,
+so the watching app shows "Fake publisher added you" with an Add back button.
+`MISMEET_FAKE_NAME=other` in the environment makes a second publisher, named Other in its
+request, several readers go comma-separated, and `-` as the reader publishes nothing but
 creates the publisher's key and QR code, which it also writes as
 `android/protocol/build/<name>-invite.png` for a phone to scan off the screen:
 
@@ -264,9 +266,9 @@ adb logcat --pid="$(adb shell pidof -s app.mismeet.android)"
 
 ## First test between two phones
 
-The iPhone publishes and the Android phone watches. Each phone scans the other's invite once:
-the iPhone's scan tells it whom to encrypt for, the Android phone's scan tells it whose events
-to fetch.
+The iPhone publishes and the Android phone watches. The iPhone scans the Android phone's
+invite, which tells it whom to encrypt for, and sends the Android phone an add-back request,
+which tells the Android phone whose events to fetch once it adds the iPhone back.
 
 1. On the iPhone, open Me, turn on "Share my location" and grant location while using the app,
    then tap "Allow location" for "Always". "Check setup" on the same screen lists each relay
@@ -275,10 +277,11 @@ to fetch.
    Contacts at the bottom of the map, then "Scan QR code", scan it, give the contact a name and
    tap Add. Within a few seconds "Check setup" on the iPhone shows "Last share" a moment ago
    and each relay holding that location.
-3. On the iPhone, open Me to show its QR code. On the Android phone, tap Add beside Contacts at
-   the bottom of the map, then "Scan QR code", allow the camera, scan it, name the contact, Add.
-   Pulled up, the contact list shows the district, "seen ..." and the distance after the next
-   refresh, within a minute, or at once with Refresh. Both apps open on the map, framed around
+3. On the Android phone, the contact list at the bottom of the map shows "Someone added you"
+   within a minute, or at once with Refresh; with a name under "Your name" on the iPhone's Me
+   screen, it shows that name instead. Tap "Add back", name the contact, Add. Pulled up, the
+   contact list shows the district, "seen ..." and the distance after the next refresh, within
+   a minute, or at once with Refresh. Both apps open on the map, framed around
    everyone with a known position in the phone's own country. After panning, the button at the
    bottom frames that view again; with someone abroad, "Everyone" in that view widens it to
    them too.

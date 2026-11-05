@@ -22,6 +22,7 @@ import org.nostrdevkit.sdk.SendEventTarget
  * reader of - publishes nothing but still prints the publisher's invite and QR code.
  * MISMEET_FAKE_SPEED (m/s), MISMEET_FAKE_HEADING (degrees) and MISMEET_FAKE_AGE (seconds the
  * fix is backdated) make a moving contact, which the watching app estimates along the roads.
+ * Each reader also gets one add-back request, named after the key, the first time it is named.
  * Run through the fakePublish Gradle task.
  */
 fun main(args: Array<String>) = runBlocking {
@@ -29,7 +30,8 @@ fun main(args: Array<String>) = runBlocking {
         System.err.println("usage: fakePublish <reader invite[,reader invite...] or -> <lat> <lon> [relay ...]")
         exitProcess(2)
     }
-    val readers = if (args[0] == "-") emptyList() else args[0].split(",").map { Invite.parse(it).publicKey }
+    val readerInvites = if (args[0] == "-") emptyList() else args[0].split(",").map { Invite.parse(it) }
+    val readers = readerInvites.map { it.publicKey }
     val latitude = args[1].toDouble()
     val longitude = args[2].toDouble()
     val relays = if (args.size > 3) args.drop(3) else listOf("wss://relay.damus.io", "wss://nos.lol", "wss://relay.primal.net")
@@ -75,7 +77,27 @@ fun main(args: Array<String>) = runBlocking {
         client.shutdown()
     }
 
-    val invite = Invite(keys.publicKey(), relays.map { RelayUrl.parse(it) }).link()
+    val ownInvite = Invite(keys.publicKey(), relays.map { RelayUrl.parse(it) })
+    val requestedFile = File("build/$name.requested")
+    val requested = requestedFile.takeIf { it.exists() }?.readLines()?.toMutableSet() ?: mutableSetOf()
+    val displayName = name.replace('-', ' ').replaceFirstChar { it.uppercase() }
+    for (reader in readerInvites.filter { it.publicKey.toHex() !in requested }) {
+        val wrap = AddBackRequest.wrap(ownInvite, displayName, keys, reader.publicKey, now)
+        val targets = reader.relays.map { it.toString() }.ifEmpty { relays }
+        val sender = ClientBuilder().connectTimeout(Duration.ofSeconds(ProtocolConstants.CONNECT_TIMEOUT_SECONDS)).build()
+        targets.forEach { sender.addRelay(RelayUrl.parse(it), null, false, null) }
+        sender.tryConnect(Duration.ofSeconds(ProtocolConstants.CONNECT_TIMEOUT_SECONDS))
+        try {
+            val output = sender.sendEvent(wrap, SendEventTarget.broadcast(), AckPolicy.all(), Duration.ofSeconds(ProtocolConstants.OK_TIMEOUT_SECONDS), null)
+            println("add-back request as \"$displayName\": accepted by ${output.success.size} relays, rejected by ${output.failed}")
+            if (output.success.isNotEmpty()) requested += reader.publicKey.toHex()
+        } finally {
+            sender.shutdown()
+        }
+    }
+    requestedFile.writeText(requested.joinToString("\n"))
+
+    val invite = ownInvite.link()
     println()
     println(
         if (readers.isEmpty()) "Published nothing. Add this publisher on the watching phone:"

@@ -23,13 +23,17 @@ enum PanelHeight {
 /// The contacts in a panel at the bottom of the map, like Find My's people: the header stays in
 /// view, and pulling it up or down moves between the heights of `PanelHeight`.
 struct ContactList: View {
-    private struct AddRequest: Identifiable {
+    /// What the Add contact sheet opens with: an invite to fill in, or one from an add-back
+    /// request, which stays hidden.
+    private struct Adding: Identifiable {
         let id = UUID()
         var invite = ""
+        var name = ""
+        var fromRequest = false
     }
 
     @Environment(AppModel.self) private var model
-    @State private var adding: AddRequest?
+    @State private var adding: Adding?
     @Binding var height: PanelHeight
     /// Shows a contact on the map.
     let focus: (String) -> Void
@@ -48,7 +52,7 @@ struct ContactList: View {
                     }
                     .buttonStyle(.bordered)
                     .disabled(model.isRefreshing)
-                    Button("Add", systemImage: "plus") { adding = AddRequest() }
+                    Button("Add", systemImage: "plus") { adding = Adding() }
                         .buttonStyle(.borderedProminent)
                 }
                 .labelStyle(.iconOnly)
@@ -64,7 +68,13 @@ struct ContactList: View {
             })
             if height != .collapsed {
                 List {
-                    if model.state.contacts.isEmpty {
+                    ForEach(model.state.requests) { request in
+                        RequestRow(request: request) {
+                            adding = Adding(invite: request.invite, name: request.name ?? "", fromRequest: true)
+                        }
+                        .listRowBackground(Color.clear)
+                    }
+                    if model.state.contacts.isEmpty, model.state.requests.isEmpty {
                         ContentUnavailableView(
                             "No contacts",
                             systemImage: "person.2",
@@ -86,12 +96,37 @@ struct ContactList: View {
                 .refreshable { await model.refresh() }
             }
         }
-        .sheet(item: $adding) { AddContactView(invite: $0.invite) }
+        .sheet(item: $adding) { AddContactView(invite: $0.invite, name: $0.name, fromRequest: $0.fromRequest) }
         .onChange(of: model.openedInvite, initial: true) { _, link in
             guard let link else { return }
-            adding = AddRequest(invite: link)
+            adding = Adding(invite: link)
             model.openedInvite = nil
         }
+    }
+}
+
+/// An add-back request, spec section 4.5: someone who added this phone's user asks to be added back.
+private struct RequestRow: View {
+    @Environment(AppModel.self) private var model
+    let request: StoredRequest
+    let addBack: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("\(request.name ?? "Someone") added you").font(.headline)
+            Text("Add them back to see each other. Sent \(sent).")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+            HStack {
+                Button("Add back", action: addBack).buttonStyle(.borderedProminent)
+                Button("Dismiss") { model.dismissRequest(request.id) }.buttonStyle(.bordered)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var sent: String {
+        RelativeDateTimeFormatter().localizedString(for: Date(timeIntervalSince1970: TimeInterval(request.createdAt)), relativeTo: Date())
     }
 }
 
@@ -191,28 +226,22 @@ struct AddContactView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @State private var invite: String
-    @State private var name = ""
+    @State private var name: String
     @State private var error: String?
     @State private var scanning = false
+    private let fromRequest: Bool
 
-    init(invite: String = "") {
+    init(invite: String = "", name: String = "", fromRequest: Bool = false) {
         _invite = State(initialValue: invite)
+        _name = State(initialValue: name)
+        self.fromRequest = fromRequest
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("Invite") {
-                    TextField("Invite link", text: $invite, axis: .vertical)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .lineLimit(3...6)
-                    Button("Paste") {
-                        invite = UIPasteboard.general.string ?? ""
-                    }
-                    if QRScannerView.isSupported {
-                        Button("Scan QR code") { scanning = true }
-                    }
+                if !fromRequest {
+                    inviteSection
                 }
                 Section("Name") {
                     TextField("How you call them", text: $name)
@@ -221,7 +250,7 @@ struct AddContactView: View {
                     Section { Text(error).foregroundStyle(.red) }
                 }
             }
-            .navigationTitle("Add contact")
+            .navigationTitle(fromRequest ? "Add back" : "Add contact")
             .sheet(isPresented: $scanning) {
                 NavigationStack {
                     QRScannerView { text in
@@ -254,6 +283,21 @@ struct AddContactView: View {
                 }
                 .controlSize(.large)
                 .padding()
+            }
+        }
+    }
+
+    private var inviteSection: some View {
+        Section("Invite") {
+            TextField("Invite link", text: $invite, axis: .vertical)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .lineLimit(3...6)
+            Button("Paste") {
+                invite = UIPasteboard.general.string ?? ""
+            }
+            if QRScannerView.isSupported {
+                Button("Scan QR code") { scanning = true }
             }
         }
     }

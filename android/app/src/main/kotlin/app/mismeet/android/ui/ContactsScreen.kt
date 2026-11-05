@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import app.mismeet.android.AppModel
 import app.mismeet.android.store.Contact
 import app.mismeet.android.store.PersistedState
+import app.mismeet.android.store.StoredRequest
 import app.mismeet.protocol.LocationPayload
 import app.mismeet.protocol.ProtocolConstants
 import app.mismeet.protocol.TravelMode
@@ -61,14 +63,19 @@ import kotlinx.coroutines.launch
 fun ContactList(model: AppModel, onFocus: (String) -> Unit, modifier: Modifier = Modifier) {
     val state by model.state.collectAsState()
     val placeNames by model.placeNames.collectAsState()
-    // The invite the Add contact dialog opens with; null while it is closed.
-    var adding by remember { mutableStateOf<String?>(null) }
+    // What the Add contact dialog opens with; null while it is closed.
+    var adding by remember { mutableStateOf<Adding?>(null) }
     val openedInvite by model.openedInvite.collectAsState()
     LaunchedEffect(openedInvite) {
         openedInvite?.let {
-            adding = it
+            adding = Adding(it)
             model.inviteTaken()
         }
+    }
+    val listState = rememberLazyListState()
+    // A list keeps its first visible row in place, which would leave a new request above the view.
+    LaunchedEffect(state.requests.firstOrNull()?.id) {
+        if (state.requests.isNotEmpty()) listState.animateScrollToItem(0)
     }
     var photoFor by remember { mutableStateOf<Contact?>(null) }
     var choosingFor by remember { mutableStateOf<String?>(null) }
@@ -93,9 +100,9 @@ fun ContactList(model: AppModel, onFocus: (String) -> Unit, modifier: Modifier =
         ) {
             Text("Contacts", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
             OutlinedButton(onClick = { model.refreshNow() }) { Text("Refresh") }
-            Button(onClick = { adding = "" }) { Text("Add") }
+            Button(onClick = { adding = Adding("") }) { Text("Add") }
         }
-        if (state.contacts.isEmpty()) {
+        if (state.contacts.isEmpty() && state.requests.isEmpty()) {
             Text(
                 "Add a contact from the invite they sent you.",
                 style = MaterialTheme.typography.bodyMedium,
@@ -104,9 +111,17 @@ fun ContactList(model: AppModel, onFocus: (String) -> Unit, modifier: Modifier =
         }
         LazyColumn(
             Modifier.weight(1f),
+            state = listState,
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            items(state.requests, key = { "request-${it.id}" }) { request ->
+                RequestRow(
+                    request = request,
+                    onAdd = { adding = Adding(request.invite, request.name.orEmpty(), fromRequest = true) },
+                    onDismiss = { model.dismissRequest(request.id) },
+                )
+            }
             items(state.contacts, key = { it.id }) { contact ->
                 ContactRow(
                     contact = contact,
@@ -150,12 +165,32 @@ fun ContactList(model: AppModel, onFocus: (String) -> Unit, modifier: Modifier =
         })
     }
 
-    adding?.let { invite ->
+    adding?.let { start ->
         AddContactDialog(
-            initialInvite = invite,
+            start = start,
             onDismiss = { adding = null },
             onAdd = { invite, name -> model.addContact(invite, name) },
         )
+    }
+}
+
+/** An Add contact dialog to open: an invite to fill in, or one from an add-back request, which stays hidden. */
+private data class Adding(val invite: String, val name: String = "", val fromRequest: Boolean = false)
+
+@Composable
+private fun RequestRow(request: StoredRequest, onAdd: () -> Unit, onDismiss: () -> Unit) {
+    Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text("${request.name ?: "Someone"} added you", style = MaterialTheme.typography.titleMedium)
+            val now = System.currentTimeMillis()
+            val age = if (now - request.createdAt * 1000 < DateUtils.MINUTE_IN_MILLIS) "just now"
+            else DateUtils.getRelativeTimeSpanString(request.createdAt * 1000, now, DateUtils.MINUTE_IN_MILLIS)
+            Text("Add them back to see each other. Sent $age.", style = MaterialTheme.typography.bodySmall)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onAdd) { Text("Add back") }
+                TextButton(onClick = onDismiss) { Text("Dismiss") }
+            }
+        }
     }
 }
 
@@ -243,42 +278,17 @@ fun openMap(context: Context, contact: Contact) {
 }
 
 @Composable
-private fun AddContactDialog(initialInvite: String, onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
-    var invite by remember(initialInvite) { mutableStateOf(initialInvite) }
-    var name by remember { mutableStateOf("") }
+private fun AddContactDialog(start: Adding, onDismiss: () -> Unit, onAdd: (String, String) -> Unit) {
+    var invite by remember(start) { mutableStateOf(start.invite) }
+    var name by remember(start) { mutableStateOf(start.name) }
     var error by remember { mutableStateOf<String?>(null) }
-    val context = LocalContext.current
-    val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
-        result.contents?.let { invite = it }
-    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add contact") },
+        title = { Text(if (start.fromRequest) "Add back" else "Add contact") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(
-                    value = invite,
-                    onValueChange = { invite = it },
-                    label = { Text("Invite") },
-                    placeholder = { Text("Invite link") },
-                    minLines = 3,
-                )
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = {
-                        invite = context.getSystemService(ClipboardManager::class.java)
-                            ?.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty()
-                    }) { Text("Paste") }
-                    TextButton(onClick = {
-                        scanner.launch(
-                            ScanOptions()
-                                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                                .setPrompt("Scan the invite")
-                                .setBeepEnabled(false)
-                                .setOrientationLocked(false),
-                        )
-                    }) { Text("Scan QR code") }
-                }
+                if (!start.fromRequest) InviteField(invite, onChange = { invite = it })
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
@@ -295,4 +305,36 @@ private fun AddContactDialog(initialInvite: String, onDismiss: () -> Unit, onAdd
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+}
+
+@Composable
+private fun InviteField(invite: String, onChange: (String) -> Unit) {
+    val context = LocalContext.current
+    val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
+        result.contents?.let(onChange)
+    }
+    OutlinedTextField(
+        value = invite,
+        onValueChange = onChange,
+        label = { Text("Invite") },
+        placeholder = { Text("Invite link") },
+        minLines = 3,
+    )
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TextButton(onClick = {
+            onChange(
+                context.getSystemService(ClipboardManager::class.java)
+                    ?.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty(),
+            )
+        }) { Text("Paste") }
+        TextButton(onClick = {
+            scanner.launch(
+                ScanOptions()
+                    .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                    .setPrompt("Scan the invite")
+                    .setBeepEnabled(false)
+                    .setOrientationLocked(false),
+            )
+        }) { Text("Scan QR code") }
+    }
 }

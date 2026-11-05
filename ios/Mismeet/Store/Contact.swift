@@ -19,6 +19,8 @@ struct Contact: Codable, Identifiable, Equatable {
     var lastSeenAt: Date?
     var relayListCheckedAt: Date?
     var photoSetAt: Date?
+    /// The add-back request of spec section 4.5 was sent, or is not needed.
+    var addBackDone = false
 
     var publicKey: PublicKey? {
         try? PublicKey.parse(publicKey: id)
@@ -48,5 +50,6 @@ extension Contact {
         lastSeenAt = try container.decodeIfPresent(Date.self, forKey: .lastSeenAt)
         relayListCheckedAt = try container.decodeIfPresent(Date.self, forKey: .relayListCheckedAt)
         photoSetAt = try container.decodeIfPresent(Date.self, forKey: .photoSetAt)
+        addBackDone = try container.decodeIfPresent(Bool.self, forKey: .addBackDone) ?? false
     }
 }

@@ -61,7 +61,7 @@ As submitted in Play Console on 2026-10-24, the sign in instructions as updated 
   set named "Two devices, no account", with no username or password and these instructions:
 
   ```text
-  No account or login. Seeing a contact needs a second device. On device A open the Me tab to show the invite QR code. On device B tap Add beside Contacts at the bottom of the map, then Scan QR code (or Paste after Copy link on A), type a name, tap Add. On A turn on Share my location on the Me tab and allow location, then all the time. Within a minute, or after Share now, B shows A on the map and in its contact list. With one device, the Me tab shows the invite and the sharing switch.
+  No account or login. Seeing a contact needs a second device. On both devices turn on Share my location on the Me tab and allow location, then all the time. On device A open the Me tab to show the invite QR code. On device B tap Add beside Contacts at the bottom of the map, then Scan QR code (or Paste after Copy link on A), type a name, tap Add. Within a minute, or after Refresh, A's contact list shows "Someone added you": tap Add back, type a name, tap Add. Within a minute, or after Share now, each device shows the other on the map and in its contact list. With one device, the Me tab shows the invite and the sharing switch.
   ```
 
 - Content rating: category All Other App Types; the app shares the user's precise location

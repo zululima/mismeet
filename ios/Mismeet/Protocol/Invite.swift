@@ -12,8 +12,11 @@ struct Invite: Equatable {
     }
 
     func link() throws -> String {
-        let relays = Array(relays.prefix(ProtocolConstants.maxRelaysPerList))
-        return ProtocolConstants.inviteLinkPrefix + (try Nip19Profile(publicKey: publicKey, relays: relays).toBech32())
+        ProtocolConstants.inviteLinkPrefix + (try nprofile())
+    }
+
+    func nprofile() throws -> String {
+        try Nip19Profile(publicKey: publicKey, relays: Array(relays.prefix(ProtocolConstants.maxRelaysPerList))).toBech32()
     }
 
     static func parse(_ text: String) throws -> Invite {

@@ -4,6 +4,12 @@ package app.mismeet.protocol
 object ProtocolConstants {
     val LOCATION_KIND: UShort = 31122u
     val RELAY_LIST_KIND: UShort = 10002u
+    val GIFT_WRAP_KIND: UShort = 1059u
+    val ADD_BACK_KIND: UShort = 1122u
+    const val ADD_BACK_VERSION = 1
+    const val ADD_BACK_EXPIRATION_SECONDS = 2_592_000L
+    const val ADD_BACK_FETCH_LIMIT = 100L
+    const val MAX_NAME_LENGTH = 64
     const val IDENTIFIER = "location"
     const val CONTENT_VERSION = 1
     const val PAYLOAD_VERSION = 1

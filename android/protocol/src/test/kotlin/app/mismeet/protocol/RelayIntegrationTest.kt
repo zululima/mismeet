@@ -20,7 +20,8 @@ import org.nostrdevkit.sdk.SendEventTarget
 
 /**
  * Talks to public relays, so it runs only when MISMEET_RELAY_TESTS=1 is in the environment.
- * It publishes one location event and one relay list under throwaway keys and reads them back.
+ * It publishes one location event, one relay list and one add-back request under throwaway keys
+ * and reads them back.
  */
 class RelayIntegrationTest {
     private val relayUrls = listOf("wss://relay.damus.io", "wss://nos.lol", "wss://relay.primal.net")
@@ -77,5 +78,47 @@ class RelayIntegrationTest {
         val list = events.firstOrNull { it.kind().asU16() == ProtocolConstants.RELAY_LIST_KIND }
         assertNotNull("no relay list came back", list)
         assertEquals(relayUrls.map { RelayUrl.parse(it).toString() }, RelayList.writeRelays(list!!))
+    }
+
+    @Test
+    fun sendsAndReadsBackAnAddBackRequestThroughPublicRelays() = runBlocking {
+        assumeTrue(System.getenv("MISMEET_RELAY_TESTS") == "1")
+        val sender = Keys.generate()
+        val receiver = Keys.generate()
+        val now = System.currentTimeMillis() / 1000
+        val invite = Invite(sender.publicKey(), relayUrls.map { RelayUrl.parse(it) })
+        val wrap = AddBackRequest.wrap(invite, "Relay test", sender, receiver.publicKey(), now)
+
+        val writer = connectedClient()
+        try {
+            val output = writer.sendEvent(
+                wrap, SendEventTarget.broadcast(), AckPolicy.all(),
+                Duration.ofSeconds(ProtocolConstants.OK_TIMEOUT_SECONDS), null,
+            )
+            println("gift wrap accepted by ${output.success} rejected by ${output.failed}")
+            assertTrue("gift wrap: ${output.failed}", output.success.isNotEmpty())
+        } finally {
+            writer.shutdown()
+        }
+
+        var served = 0
+        for (url in relayUrls) {
+            val filter = Filter().kinds(listOf(Kind(ProtocolConstants.GIFT_WRAP_KIND))).pubkey(receiver.publicKey())
+            val client = ClientBuilder().connectTimeout(Duration.ofSeconds(ProtocolConstants.CONNECT_TIMEOUT_SECONDS)).build()
+            client.addRelay(RelayUrl.parse(url), null, false, null)
+            client.tryConnect(Duration.ofSeconds(ProtocolConstants.CONNECT_TIMEOUT_SECONDS))
+            val events = try {
+                client.fetchEvents(
+                    ReqTarget.manual(mapOf(RelayUrl.parse(url) to listOf(filter))),
+                    Duration.ofSeconds(ProtocolConstants.OK_TIMEOUT_SECONDS), ReqExitPolicy.ExitOnEose, null,
+                )
+            } finally {
+                client.shutdown()
+            }
+            println("$url served ${events.size} gift wraps without AUTH")
+            events.forEach { assertEquals("Relay test", AddBackRequest.read(it, receiver, now).name) }
+            served += events.size
+        }
+        assertTrue("no relay served the request back", served > 0)
     }
 }
