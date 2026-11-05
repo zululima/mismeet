@@ -53,6 +53,31 @@ PROPS
 `-PuntaggedRelease` on `assembleRelease` or `bundleRelease` skips the tag check to try out the
 signing setup; never publish what it builds.
 
+## Problem reports key
+
+Problem reports (spec section 8.8) are encrypted for one Nostr key, whose public half sits in
+both apps' `ProtocolConstants` as `REPORTS_PUBLIC_KEY` and `reportsPublicKey`. Its secret
+stays on the maintainer's Mac, in a file that the git-ignored `android/.reports-key` names.
+Losing it makes every report sent to it unreadable, and a new key reaches users only with new
+builds, so keep a backup in a password manager.
+
+A fork makes its own key, then puts the hex it prints into both constants files and the spec's
+section 10:
+
+```bash
+printf '%s\n' '~/keys/mismeet-reports.nsec' > android/.reports-key
+```
+
+```bash
+android/gradlew -p android -q :protocol:reports -PreportsArgs=new
+```
+
+Read the reports, which saves each new one under `reports/`:
+
+```bash
+android/gradlew -p android -q :protocol:reports
+```
+
 ## Android on Google Play
 
 Once:

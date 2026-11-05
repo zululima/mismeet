@@ -51,8 +51,15 @@ follows it, and a protocol change edits the spec first, in the same change.
   `android/protocol/src/main/kotlin/app/mismeet/protocol/ProtocolConstants.kt` and match the
   table in the spec, section 10. The conformance checklist in section 12 is a unit test on each
   platform, under `ios/MismeetTests` and `android/protocol/src/test`.
-- Nothing but kinds `31122` and `10002` and the kind `1059` add-back requests of spec section
-  4.5 is ever published. No profile, no contact list, no DMs.
+- Nothing but kinds `31122` and `10002`, the kind `1059` add-back requests of spec section
+  4.5 and the kind `1059` problem reports of section 8.8 is ever published. No profile, no
+  contact list, no DMs but those reports.
+- Problem reports are off by default on both platforms: keep every automatic report behind
+  `reportsEnabled`. "Send report to the developer" on Check setup is the one path without it,
+  and it shows the whole text first. A report's text goes through `ProblemReport.redact`, so a
+  new line in it, or a new log line at info level, never needs to hold a key, a name or a
+  position to be useful. The reports key in `ProtocolConstants` is the user's; its secret is
+  in `~/keys/mismeet-reports.nsec`, which the git-ignored `android/.reports-key` names.
 - Publishing is opt-in and off by default on both platforms (spec section 8.1): the phone then
   only watches its contacts, publishes nothing, not even its relay list, and needs no location
   permission. The "Share my location" switch on the Me screen turns it on. Keep every
@@ -129,7 +136,7 @@ follows it, and a protocol change edits the spec first, in the same change.
   since Play serves the highest version code of the tracks they are in. Never run `zsp
   publish`, which signs with the user's own Nostr key.
 - The app shows no log in any build; it writes to the system log only (Console.app and
-  logcat). For people, "Check setup" on the Me screen tests what sharing needs, in the style
+  logcat), and its last 50 lines go only into problem reports. For people, "Check setup" on the Me screen tests what sharing needs, in the style
   of Slack's connection test: permissions, battery and data restrictions, the last share and
   its failure, and each relay, by asking it for this phone's own location event. A new reason
   sharing can fail gets a check there on both platforms.
@@ -309,6 +316,13 @@ adb exec-out screencap -p > emulator.png
 adb emu kill
 ```
 
+Problem reports: read the ones on the report relays, print them and save each new one under
+`reports/` at the repository root, since the relays drop them after 30 days:
+
+```bash
+android/gradlew -p android -q :protocol:reports
+```
+
 Fake publisher and launch hooks for debug builds, the same commands as "Testing without a
 second phone" in `docs/development.md`. The watching app logs its own invite at launch on a
 line starting `Invite:`, which these print:
@@ -399,5 +413,6 @@ keeps running when the turn ends.
 ## Git-ignored paths
 
 `.gitignore` covers the generated Xcode project, build output, the Gradle caches and the
-local-only files named above (`ios/.team-id`, `ios/.device-id`, `android/local.properties`).
+local-only files named above (`ios/.team-id`, `ios/.device-id`, `android/local.properties`,
+`android/.reports-key`, `reports/`).
 Anything else that is generated or machine-specific goes there too, never into a commit.

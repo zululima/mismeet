@@ -10,6 +10,13 @@ object ProtocolConstants {
     const val ADD_BACK_EXPIRATION_SECONDS = 2_592_000L
     const val ADD_BACK_FETCH_LIMIT = 100L
     const val MAX_NAME_LENGTH = 64
+    val CHAT_MESSAGE_KIND: UShort = 14u
+    const val REPORT_EXPIRATION_SECONDS = 2_592_000L
+    const val REPORT_MAX_LENGTH = 8_000
+    const val REPORT_INTERVAL_SECONDS = 86_400L
+    const val REPORT_LOG_LINES = 50
+    const val REPORTS_PUBLIC_KEY = "1300350a75a59a37e42c4e34f788aa863c96eee9386ba68a39d2f6ee20e9b792"
+    val REPORT_RELAYS = listOf("wss://nos.lol", "wss://relay.primal.net")
     const val IDENTIFIER = "location"
     const val CONTENT_VERSION = 1
     const val PAYLOAD_VERSION = 1

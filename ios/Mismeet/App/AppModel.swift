@@ -26,6 +26,7 @@ final class AppModel {
     private(set) var isRefreshing = false
     private(set) var isPublishing = false
     @ObservationIgnored private var isSendingRequests = false
+    @ObservationIgnored private var isReporting = false
     let keys: Keys
     let npub: String
     let roads = RoadData()
@@ -93,6 +94,8 @@ final class AppModel {
         }
         #endif
         log("Invite: \(inviteLink)")
+        CrashReceiver.shared.start()
+        crashArrived()
     }
 
     var inviteLink: String {
@@ -402,6 +405,79 @@ final class AppModel {
     private func shareFailed(_ reason: String) {
         state.lastShareFailure = ShareFailure(at: Date(), reason: reason)
         save()
+        Task { await reportAutomatically(reason: "A share failed") }
+    }
+
+    // MARK: Problem reports, spec section 8.8
+
+    func setReportsEnabled(_ enabled: Bool) {
+        state.reportsEnabled = enabled
+        save()
+        if !enabled { ProblemReports.forgetCrash() }
+    }
+
+    /// A crash diagnostic arrived from MetricKit, or was waiting from an earlier run.
+    func crashArrived() {
+        guard ProblemReports.pendingCrash != nil else { return }
+        if state.reportsEnabled {
+            Task { await reportAutomatically(reason: "The app crashed") }
+        } else {
+            ProblemReports.forgetCrash()
+        }
+    }
+
+    /// The report the user would send now, with a crash still waiting to be reported.
+    func reportText(relayChecks: [RelayCheck]?) async -> String {
+        let servicesEnabled = await Task.detached { CLLocationManager.locationServicesEnabled() }.value
+        let checks = if let relayChecks { relayChecks } else { await checkRelays() }
+        return ProblemReports.text(
+            model: self, servicesEnabled: servicesEnabled, relayChecks: checks,
+            reason: "Sent from Check setup", automatic: false, crash: ProblemReports.pendingCrash
+        )
+    }
+
+    /// Sends a report the user has read; true when a relay took it.
+    func sendReport(_ text: String) async -> Bool {
+        await publishReport(text, automatic: false)
+    }
+
+    private func reportAutomatically(reason: String) async {
+        guard state.reportsEnabled, !isReporting else { return }
+        if let last = state.lastReportAt, Date().timeIntervalSince(last) < ProtocolConstants.reportIntervalSeconds { return }
+        isReporting = true
+        defer { isReporting = false }
+        let task = BackgroundTask(name: "report")
+        defer { task.end() }
+        let servicesEnabled = await Task.detached { CLLocationManager.locationServicesEnabled() }.value
+        let crash = ProblemReports.pendingCrash
+        let text = ProblemReports.text(
+            model: self, servicesEnabled: servicesEnabled, relayChecks: await checkRelays(),
+            reason: crash != nil ? "The app crashed" : reason, automatic: true, crash: crash
+        )
+        await publishReport(text, automatic: true)
+    }
+
+    @discardableResult
+    private func publishReport(_ text: String, automatic: Bool) async -> Bool {
+        let wrap: Event
+        do {
+            wrap = try ProblemReport.wrap(text: text, receiver: try ProblemReport.reportsKey, now: UInt64(Date().timeIntervalSince1970))
+        } catch {
+            log("Problem report failed: \(error)")
+            return false
+        }
+        let result = await relays.publish(event: wrap, relayUrls: ProtocolConstants.reportRelays)
+        guard !result.succeeded.isEmpty else {
+            log("Problem report: no relay accepted it, \(result.summary)")
+            return false
+        }
+        if automatic {
+            state.lastReportAt = Date()
+            save()
+        }
+        ProblemReports.forgetCrash()
+        log("Problem report: accepted by \(result.succeeded.count) of \(ProtocolConstants.reportRelays.count) relays")
+        return true
     }
 
     /// Whether each of this phone's relays answers, and the location event of this phone it holds.
@@ -581,6 +657,7 @@ final class AppModel {
 
     private func log(_ text: String) {
         logger.info("\(text, privacy: .public)")
+        ProblemReports.record(text)
         #if DEBUG
         FileHandle.standardError.write(Data((text + "\n").utf8))
         #endif

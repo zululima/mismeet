@@ -70,10 +70,13 @@ As submitted in Play Console on 2026-10-24, the sign in instructions as updated 
 - Government app, financial features, health features: none.
 - Target audience: 18 and over. A location sharing app aimed at children would fall under the
   Families policy, and the app has no age checks.
-- Data safety: no data collected and none shared. The developer runs no server; the location
-  leaves the phone only end-to-end encrypted for the chosen contacts, which Play exempts from
-  disclosure, and the app has no analytics, ads or crash reporting. Data is encrypted in
-  transit. The Nostr relays still see a public key, an IP address and publish times,
+- Data safety: App info and performance, Crash logs and Diagnostics, collected and not
+  shared, not processed ephemerally, optional (users choose), for Analytics; no other data
+  collected or shared. These are the opt-in problem reports of `PRIVACY.md`, from version code
+  16. No deletion request: a report carries nothing that ties it to its sender, and the relays
+  drop it after 30 days. The developer runs no server; the location leaves the phone only
+  end-to-end encrypted for the chosen contacts, which Play exempts from disclosure, and the
+  app has no analytics service or ads. Data is encrypted in transit. The Nostr relays still see a public key, an IP address and publish times,
   and the Overpass API sees an IP address and the road and place name squares it serves, as
   `PRIVACY.md` says.
 

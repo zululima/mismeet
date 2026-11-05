@@ -58,6 +58,16 @@ struct MeView: View {
                     }
                 }
                 Section {
+                    Toggle("Send problem reports", isOn: Binding(
+                        get: { model.state.reportsEnabled },
+                        set: { model.setReportsEnabled($0) }
+                    ))
+                } header: {
+                    Text("Problem reports")
+                } footer: {
+                    Text("When a share fails or the app crashes, sends the developer an encrypted report, at most once a day, from a key made for that report alone. It holds the setup checks and the app's recent messages, never your location, contacts or keys. Check setup shows a report before you send one.")
+                }
+                Section {
                     NavigationLink("Check setup") { SetupChecksView() }
                 }
             }

@@ -54,6 +54,10 @@ data class PersistedState(
     val requests: List<StoredRequest> = emptyList(),
     /** Senders whose add-back requests the user dismissed, as hex public keys. */
     val dismissedRequests: List<String> = emptyList(),
+    /** Problem reports of spec section 8.8 after a failed share or a crash; off until turned on. */
+    val reportsEnabled: Boolean = false,
+    /** The last automatic report, which the daily limit counts from. */
+    val lastReportAt: Long? = null,
 ) {
     companion object {
         val DEFAULT_RELAYS = listOf("wss://relay.damus.io", "wss://nos.lol", "wss://relay.primal.net")

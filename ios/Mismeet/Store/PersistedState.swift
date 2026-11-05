@@ -17,6 +17,10 @@ struct PersistedState: Codable, Equatable {
     var requests: [StoredRequest] = []
     /// Senders whose add-back requests the user dismissed, as hex public keys.
     var dismissedRequests: [String] = []
+    /// Problem reports of spec section 8.8 after a failed share or a crash; off until turned on.
+    var reportsEnabled = false
+    /// The last automatic report, which the daily limit counts from.
+    var lastReportAt: Date?
 }
 
 struct ShareFailure: Codable, Equatable {
@@ -59,6 +63,8 @@ extension PersistedState {
         ownName = try container.decodeIfPresent(String.self, forKey: .ownName) ?? ""
         requests = try container.decodeIfPresent([StoredRequest].self, forKey: .requests) ?? []
         dismissedRequests = try container.decodeIfPresent([String].self, forKey: .dismissedRequests) ?? []
+        reportsEnabled = try container.decodeIfPresent(Bool.self, forKey: .reportsEnabled) ?? false
+        lastReportAt = try container.decodeIfPresent(Date.self, forKey: .lastReportAt)
     }
 }
 

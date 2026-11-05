@@ -150,9 +150,20 @@ fun MeScreen(model: AppModel, modifier: Modifier = Modifier) {
             }
         }
 
+        Text("Problem reports", style = MaterialTheme.typography.titleMedium)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text("Send problem reports")
+            Switch(checked = state.reportsEnabled, onCheckedChange = { model.setReportsEnabled(it) })
+        }
+        Text(REPORTS_FOOTER, style = MaterialTheme.typography.bodySmall)
         OutlinedButton(onClick = { checking = true }) { Text("Check setup") }
     }
 }
+
+private const val REPORTS_FOOTER =
+    "When a share fails or the app crashes, sends the developer an encrypted report, at most once a day, from a key " +
+        "made for that report alone. It holds the setup checks and the app's recent messages, never your location, " +
+        "contacts or keys. Check setup shows a report before you send one."
 
 private const val LOCATION_DISCLOSURE =
     "Mismeet collects location data to share your position with the contacts you choose, even when the app is closed " +

@@ -4,33 +4,31 @@ import SwiftUI
 /// What has to hold for sharing to work, checked one by one as Slack's connection test does, each
 /// with a way to fix it where iOS offers one.
 struct SetupChecksView: View {
-    private enum Outcome {
-        case ok, warning, problem, info
-    }
-
-    private struct Check: Identifiable {
-        let title: String
-        let outcome: Outcome
-        let detail: String
-        var fix: (label: String, action: () -> Void)?
-
-        var id: String { title }
-    }
+    private typealias Check = SetupChecks.Check
+    private typealias Outcome = SetupChecks.Outcome
 
     @Environment(AppModel.self) private var model
     @Environment(\.openURL) private var openURL
     @State private var servicesEnabled: Bool?
     @State private var relayChecks: [RelayCheck]?
     @State private var round = 0
+    @State private var preparing = false
+    @State private var report: Report?
+    @State private var sent: Bool?
+
+    private struct Report: Identifiable {
+        let text: String
+        var id: String { text }
+    }
 
     var body: some View {
         List {
             Section("This phone") {
-                ForEach(phoneChecks) { row($0) }
+                ForEach(SetupChecks.phone(model: model, servicesEnabled: servicesEnabled, openSettings: openSettings)) { row($0) }
             }
             Section("Relays") {
                 if let relayChecks {
-                    ForEach(relayChecks.map(relayCheck)) { row($0) }
+                    ForEach(relayChecks.map { SetupChecks.relay($0, state: model.state) }) { row($0) }
                 } else {
                     ProgressView("Asking each relay")
                 }
@@ -39,124 +37,49 @@ struct SetupChecksView: View {
                 if model.state.contacts.isEmpty {
                     row(Check(title: "No contacts", outcome: .warning, detail: "Add someone from the invite they sent you."))
                 }
-                ForEach(model.state.contacts.map(contactCheck)) { row($0) }
+                ForEach(model.state.contacts.map(SetupChecks.contact)) { row($0) }
             }
             Section("App") {
                 row(Check(title: "Version", outcome: .info, detail: version))
+                if let sent {
+                    row(sent
+                        ? Check(title: "Report", outcome: .ok, detail: "Sent to the developer")
+                        : Check(title: "Report", outcome: .problem, detail: "Not sent: no relay took it. Try again later."))
+                }
             }
         }
         .navigationTitle("Check setup")
         .navigationBarTitleDisplayMode(.inline)
         .safeAreaInset(edge: .bottom) {
-            Button { round += 1 } label: {
-                Text("Run checks again").frame(maxWidth: .infinity)
+            VStack(spacing: 8) {
+                Button {
+                    preparing = true
+                    Task {
+                        report = Report(text: await model.reportText(relayChecks: relayChecks))
+                        preparing = false
+                    }
+                } label: {
+                    Text(preparing ? "Preparing report..." : "Send report to the developer").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .disabled(preparing)
+                Button { round += 1 } label: {
+                    Text("Run checks again").frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(relayChecks == nil)
             }
-            .buttonStyle(.borderedProminent)
             .controlSize(.large)
             .padding()
-            .disabled(relayChecks == nil)
+            .background(.bar)
+        }
+        .sheet(item: $report) { report in
+            ReportPreview(text: report.text) { sent = $0 }
         }
         .task(id: round) {
             relayChecks = nil
             servicesEnabled = await Task.detached { CLLocationManager.locationServicesEnabled() }.value
             relayChecks = await model.checkRelays()
-        }
-    }
-
-    private var phoneChecks: [Check] {
-        let state = model.state
-        guard state.sharingEnabled else {
-            return [Check(
-                title: "Share my location", outcome: .warning,
-                detail: "Off: this phone only watches its contacts and shares nothing.",
-                fix: ("Turn on", { model.setSharingEnabled(true) })
-            )]
-        }
-        var checks = [Check(title: "Share my location", outcome: .ok, detail: "On")]
-        if servicesEnabled == false {
-            checks.append(Check(
-                title: "Location Services", outcome: .problem,
-                detail: "Off for the whole phone, under Settings > Privacy & Security > Location Services."
-            ))
-        }
-        switch model.authorization {
-        case .authorizedAlways:
-            checks.append(Check(title: "Location permission", outcome: .ok, detail: "Always"))
-        case .authorizedWhenInUse:
-            checks.append(Check(
-                title: "Location permission", outcome: .problem,
-                detail: "While using the app: sharing stops once Mismeet is in the background. Choose Always.",
-                fix: ("Open Settings", openSettings)
-            ))
-        case .notDetermined:
-            checks.append(Check(
-                title: "Location permission", outcome: .problem, detail: "Not asked yet.",
-                fix: ("Allow location", { model.requestLocationAuthorization() })
-            ))
-        default:
-            checks.append(Check(
-                title: "Location permission", outcome: .problem, detail: "Denied. Choose Always.",
-                fix: ("Open Settings", openSettings)
-            ))
-        }
-        if !model.preciseLocation {
-            checks.append(Check(
-                title: "Precise location", outcome: .problem,
-                detail: "Off: contacts see a point that can be kilometres away.",
-                fix: ("Open Settings", openSettings)
-            ))
-        }
-        if ProcessInfo.processInfo.isLowPowerModeEnabled {
-            checks.append(Check(
-                title: "Low Power Mode", outcome: .warning,
-                detail: "On: iOS cuts background work, which can delay sharing."
-            ))
-        }
-        let sharingWith = state.contacts.filter(\.share).count
-        checks.append(sharingWith == 0
-            ? Check(title: "Sharing with", outcome: .warning, detail: "Nobody: add a contact, or turn sharing on in a contact's card.")
-            : Check(title: "Sharing with", outcome: .ok, detail: sharingWith == 1 ? "1 contact" : "\(sharingWith) contacts"))
-        if let failure = state.lastShareFailure, failure.at > state.lastPublishedAt ?? .distantPast {
-            checks.append(Check(title: "Last share", outcome: .problem, detail: "Failed \(ago(failure.at)): \(failure.reason)"))
-        } else if let at = state.lastPublishedAt {
-            checks.append(Check(
-                title: "Last share", outcome: .ok,
-                detail: "\(ago(at).capitalizedFirst). An iPhone shares when it has moved about 500 m and when Mismeet opens."
-            ))
-        } else {
-            checks.append(Check(title: "Last share", outcome: .warning, detail: "Not yet"))
-        }
-        if let fix = state.lastFix {
-            checks.append(Check(
-                title: "Last position", outcome: .info,
-                detail: "\(ago(fix.time).capitalizedFirst), within \(Int(fix.horizontalAccuracy.rounded())) m"
-            ))
-        }
-        return checks
-    }
-
-    private func relayCheck(_ check: RelayCheck) -> Check {
-        let name = URL(string: check.url)?.host() ?? check.url
-        if let problem = check.problem {
-            return Check(title: name, outcome: .problem, detail: "Unreachable: \(problem)")
-        }
-        guard let at = check.ownLocationAt else {
-            let shared = model.state.sharingEnabled && model.state.lastPublishedCreatedAt != nil
-            return Check(title: name, outcome: shared ? .warning : .ok, detail: shared ? "Answers, but holds no location of yours" : "Answers")
-        }
-        let when = ago(Date(timeIntervalSince1970: TimeInterval(at)))
-        if let last = model.state.lastPublishedCreatedAt, at < last {
-            return Check(title: name, outcome: .warning, detail: "Holds an older location of yours, shared \(when)")
-        }
-        return Check(title: name, outcome: .ok, detail: "Holds your location shared \(when)")
-    }
-
-    private func contactCheck(_ contact: Contact) -> Check {
-        let status = ContactRow.status(of: contact, place: nil)
-        switch contact.sharing {
-        case .sharing: return Check(title: contact.name, outcome: .ok, detail: "Shares with you. \(status)")
-        case .notSharing: return Check(title: contact.name, outcome: .warning, detail: "Has not added you, or does not share with you")
-        case .unknown: return Check(title: contact.name, outcome: .warning, detail: "No location found on their relays yet")
         }
     }
 
@@ -191,12 +114,51 @@ struct SetupChecksView: View {
         }
     }
 
-    private func ago(_ date: Date) -> String {
-        RelativeDateTimeFormatter().localizedString(for: date, relativeTo: Date())
-    }
-
     private func openSettings() {
         if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+    }
+
+    private struct ReportPreview: View {
+        let text: String
+        let onSent: (Bool) -> Void
+        @Environment(AppModel.self) private var model
+        @Environment(\.dismiss) private var dismiss
+        @State private var sending = false
+
+        var body: some View {
+            NavigationStack {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("It goes encrypted to the developer, from a key made for this one report. It holds no location, contact names or keys.")
+                        Text(text).font(.system(.footnote, design: .monospaced)).textSelection(.enabled)
+                    }
+                    .padding()
+                }
+                .navigationTitle("Send this report?")
+                .navigationBarTitleDisplayMode(.inline)
+                .safeAreaInset(edge: .bottom) {
+                    HStack {
+                        Button { dismiss() } label: { Text("Cancel").frame(maxWidth: .infinity) }
+                            .buttonStyle(.bordered)
+                        Button {
+                            sending = true
+                            Task {
+                                onSent(await model.sendReport(text))
+                                dismiss()
+                            }
+                        } label: {
+                            Text(sending ? "Sending..." : "Send").frame(maxWidth: .infinity)
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    .controlSize(.large)
+                    .disabled(sending)
+                    .padding()
+                    .background(.bar)
+                }
+            }
+            .interactiveDismissDisabled(sending)
+        }
     }
 
     private var version: String {
@@ -205,8 +167,4 @@ struct SetupChecksView: View {
         let build = info?["CFBundleVersion"] as? String ?? "?"
         return "Mismeet \(short) (\(build)), iOS \(UIDevice.current.systemVersion)"
     }
-}
-
-private extension String {
-    var capitalizedFirst: String { prefix(1).uppercased() + dropFirst() }
 }

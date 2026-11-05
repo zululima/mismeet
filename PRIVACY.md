@@ -1,8 +1,9 @@
 # Mismeet privacy policy
 
-Mismeet has no server and no account. Its developer receives no data from the app: no
-location, no contacts, no analytics, no crash reports and no advertising identifiers. There is
-no tracking.
+Mismeet has no server and no account. Its developer receives nothing from the app unless you
+turn on problem reports or send one yourself, and then only what the section on problem
+reports below lists: never your location or contacts, and no analytics or advertising
+identifiers. There is no tracking.
 
 ## What stays on your phone
 
@@ -18,6 +19,9 @@ Only when you share your location, which is off until you turn it on:
   separately for each contact you share with (NIP-44). It expires after 24 hours, and each new
   publish replaces the previous one. Relays cannot read the location or tell who it is for.
 - Your relay list goes to the same relays, so that contacts know where to look.
+- When you add a contact, an add-back request goes to their relays: your invite and the name
+  you gave yourself on the Me screen, encrypted for that contact alone (NIP-59) and sent from a
+  throwaway key, so that they can add you back. It expires after 30 days.
 
 Sharing works in the background: once it is on, the app collects location data to share your
 position with the contacts you choose, even when the app is closed or not in use. On Android a
@@ -30,6 +34,24 @@ and relay.primal.net. A relay can see your public key, when you publish, your IP
 roughly how many contacts you share with (rounded up to 4, 8, 16, 32 or 64) and, when you
 fetch, which public keys you ask about. Section 9 of the
 [protocol specification](spec/SPEC.md) describes this in detail.
+
+## Problem reports
+
+Problem reports are off until you turn on "Send problem reports" on the Me screen. With it on,
+the app sends a report when a share fails or after the app crashed, at most once a day. You can
+also send one from Check setup, which shows the whole report before it goes.
+
+A report holds why it was sent, the app version, the iOS or Android version, the phone model,
+the results of the setup checks, how many contacts you have and how many share with you, the
+app's last 50 messages, and for a crash where in the app it stopped. Before sending, the app
+removes keys, invite links, coordinates, relays you added yourself and the names you gave
+contacts. A report never holds your location, a place name, a contact's name or key, your own
+key or a photo.
+
+The report is encrypted for the developer's reports key alone (NIP-17) and sent from a key made
+for that one report, to the relays nos.lol and relay.primal.net, which delete it after 30 days.
+Neither the relays nor the developer can tell from the report whose phone sent it; the relays
+see your IP address. The developer keeps reports to fix bugs and shares them with nobody.
 
 ## Maps, roads and pictures
 

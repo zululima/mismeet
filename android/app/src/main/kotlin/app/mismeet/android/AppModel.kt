@@ -8,6 +8,7 @@ import android.graphics.ImageDecoder
 import android.net.Uri
 import android.os.BatteryManager
 import android.util.Log
+import app.mismeet.android.checks.ProblemReports
 import app.mismeet.android.identity.DeviceKeys
 import app.mismeet.android.location.Countries
 import app.mismeet.android.location.LocationProvider
@@ -28,6 +29,7 @@ import app.mismeet.protocol.LocationEventBuilder
 import app.mismeet.protocol.LocationEventReader
 import app.mismeet.protocol.LocationFix
 import app.mismeet.protocol.LocationReadResult
+import app.mismeet.protocol.ProblemReport
 import app.mismeet.protocol.ProtocolConstants
 import app.mismeet.protocol.RelayList
 import app.mismeet.protocol.RelayPlan
@@ -81,6 +83,7 @@ class AppModel private constructor(private val context: Context) {
     private val publishing = Mutex()
     private val refreshing = Mutex()
     private val requesting = Mutex()
+    private val reporting = Mutex()
     private val photos = ConcurrentHashMap<String, Pair<Long, Bitmap>>()
     val roads = RoadData(context)
     private val places = PlaceData(context)
@@ -91,8 +94,12 @@ class AppModel private constructor(private val context: Context) {
     val countries by lazy { Countries(context.assets.open("countries.json").bufferedReader().use { it.readText() }) }
 
     init {
+        ProblemReports.catchCrashes(context)
         if (_state.value.sharingEnabled && _state.value.relayListPublishedAt == null) scope.launch { publishRelayList() }
         log("Invite: ${inviteLink()}")
+        if (ProblemReports.pendingCrash(context) != null) {
+            if (_state.value.reportsEnabled) scope.launch { reportAutomatically("The app crashed") } else ProblemReports.forgetCrash(context)
+        }
     }
 
     fun inviteLink(): String =
@@ -339,6 +346,58 @@ class AppModel private constructor(private val context: Context) {
 
     private fun shareFailed(reason: String) {
         update { it.copy(lastShareFailure = ShareFailure(System.currentTimeMillis(), reason)) }
+        scope.launch { reportAutomatically("A share failed") }
+    }
+
+    // Problem reports, spec section 8.8
+
+    fun setReportsEnabled(enabled: Boolean) {
+        update { it.copy(reportsEnabled = enabled) }
+        if (!enabled) ProblemReports.forgetCrash(context)
+    }
+
+    /** The report the user would send now, with a crash still waiting to be reported. */
+    suspend fun reportText(relayChecks: List<RelayService.RelayCheck>?): String = withContext(Dispatchers.IO) {
+        ProblemReports.text(
+            context, this@AppModel, _state.value, relayChecks ?: checkRelays(),
+            "Sent from Check setup", automatic = false, crash = ProblemReports.pendingCrash(context),
+        )
+    }
+
+    /** Sends a report the user has read; true when a relay took it. */
+    suspend fun sendReport(text: String): Boolean = reporting.withLock { publishReport(text, automatic = false) }
+
+    private suspend fun reportAutomatically(reason: String) {
+        if (reporting.isLocked) return
+        reporting.withLock {
+            val current = _state.value
+            if (!current.reportsEnabled) return
+            val last = current.lastReportAt
+            if (last != null && System.currentTimeMillis() - last < ProtocolConstants.REPORT_INTERVAL_SECONDS * 1000) return
+            val crash = ProblemReports.pendingCrash(context)
+            val text = withContext(Dispatchers.IO) {
+                ProblemReports.text(
+                    context, this@AppModel, current, checkRelays(),
+                    if (crash != null) "The app crashed" else reason, automatic = true, crash = crash,
+                )
+            }
+            publishReport(text, automatic = true)
+        }
+    }
+
+    private suspend fun publishReport(text: String, automatic: Boolean): Boolean {
+        val wrap = runCatching { ProblemReport.wrap(text, ProblemReport.reportsKey, System.currentTimeMillis() / 1000) }
+            .onFailure { log("Problem report failed: ${it.message}") }
+            .getOrNull() ?: return false
+        val result = relays.publish(wrap, ProtocolConstants.REPORT_RELAYS)
+        if (result.succeeded.isEmpty()) {
+            log("Problem report: no relay accepted it, ${result.summary}")
+            return false
+        }
+        if (automatic) update { it.copy(lastReportAt = System.currentTimeMillis()) }
+        ProblemReports.forgetCrash(context)
+        log("Problem report: accepted by ${result.succeeded.size} of ${ProtocolConstants.REPORT_RELAYS.size} relays")
+        return true
     }
 
     /** Whether each of this phone's relays answers, and the location event of this phone it holds. */
@@ -525,6 +584,7 @@ class AppModel private constructor(private val context: Context) {
 
     private fun log(text: String) {
         Log.i("Mismeet", text)
+        ProblemReports.record(text)
     }
 
     companion object {

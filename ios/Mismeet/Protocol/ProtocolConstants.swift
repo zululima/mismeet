@@ -10,6 +10,13 @@ enum ProtocolConstants {
     static let addBackExpirationSeconds: UInt64 = 2_592_000
     static let addBackFetchLimit: UInt64 = 100
     static let maxNameLength = 64
+    static let chatMessageKind: UInt16 = 14
+    static let reportExpirationSeconds: UInt64 = 2_592_000
+    static let reportMaxLength = 8_000
+    static let reportIntervalSeconds: TimeInterval = 86_400
+    static let reportLogLines = 50
+    static let reportsPublicKey = "1300350a75a59a37e42c4e34f788aa863c96eee9386ba68a39d2f6ee20e9b792"
+    static let reportRelays = ["wss://nos.lol", "wss://relay.primal.net"]
     static let identifier = "location"
     static let contentVersion = 1
     static let payloadVersion = 1

@@ -78,7 +78,7 @@ External services
 - Public Nostr relays: relay.damus.io, nos.lol and relay.primal.net. They store the encrypted location events and the list of relays each user publishes to, and cannot read locations.
 - Apple MapKit for the map.
 - The open-source Nostr Dev Kit library (MIT licence) for the Nostr protocol and the encryption.
-Mismeet uses no authentication, payment, analytics, advertising or AI service, and has no server of its own.
+Mismeet uses no authentication, payment, analytics, advertising or AI service, and has no server of its own. From build 19, problem reports the user turns on go encrypted over the same Nostr relays to the developer's own key.
 
 Regional differences
 The app works the same in every region where it is offered. It is not offered in France.
@@ -86,6 +86,12 @@ The app works the same in every region where it is offered. It is not offered in
 Regulated industries and third-party material
 Not applicable. The app does not operate in a regulated industry and contains no protected third-party material. Its source code is public under the GNU Affero General Public License with an app store exception: https://github.com/zululima/mismeet
 ```
+
+## App Privacy
+
+From build 19 the app has opt-in problem reports, so App Privacy is no longer Data Not
+Collected. Diagnostics: Crash Data and Other Diagnostic Data, not linked to the user's
+identity, not used for tracking, for App Functionality. No other data type is collected.
 
 ## TestFlight
 

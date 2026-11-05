@@ -34,6 +34,17 @@ tasks.register<JavaExec>("fakePublish") {
     args = (project.findProperty("fakeArgs") as String?)?.trim()?.split(Regex("\\s+")) ?: emptyList()
 }
 
+// Reads the problem reports sent to the reports key, or makes the key with -PreportsArgs=new.
+tasks.register<JavaExec>("reports") {
+    description = "Reads the problem reports sent to the reports key; -PreportsArgs=new makes the key"
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass = "app.mismeet.protocol.ReportsReaderKt"
+    val keyName = rootProject.file(".reports-key")
+    systemProperty("mismeet.reportsKey", if (keyName.exists()) keyName.readText().trim() else "")
+    systemProperty("mismeet.reportsDir", rootProject.projectDir.parentFile.resolve("reports").path)
+    args = (project.findProperty("reportsArgs") as String?)?.trim()?.split(Regex("\\s+")) ?: emptyList()
+}
+
 tasks.test {
     useJUnit()
 }

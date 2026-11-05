@@ -250,6 +250,14 @@ Logs:
 adb logcat --pid="$(adb shell pidof -s app.mismeet.android)"
 ```
 
+Problem reports, which phones send with "Send problem reports" on or from Check setup, are
+readable only with the reports key that [releasing.md](releasing.md) describes. With it, this
+prints them and saves each new one under `reports/`:
+
+```bash
+android/gradlew -p android -q :protocol:reports
+```
+
 ## Notes
 
 - Free Apple ID: the provisioning profile expires after seven days, so rebuild and reinstall

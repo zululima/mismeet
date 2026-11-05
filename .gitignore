@@ -14,5 +14,7 @@ android/keystore.properties
 *.keystore
 *.p12
 android/.play-key
+android/.reports-key
+reports/
 ios/.asc-key
 *.p8

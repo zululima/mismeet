@@ -22,6 +22,8 @@ as in RFC 2119.
 - Fix: one position report from the platform location API.
 - Add-back request: the message of section 4.5, which tells a contact that the user added them
   and carries the user's own invite.
+- Problem report: the message of section 8.8, which tells the app's developer what went wrong on
+  a phone without telling them whose phone it was.
 
 ## 2. Design summary
 
@@ -33,6 +35,7 @@ as in RFC 2119.
 | Expiration | NIP-40, 24 hours after `created_at` |
 | Contacts | Local only, exchanged as `nostr:nprofile` invites, adding is approving |
 | Add-back request | NIP-59 gift wrap to a newly added contact, carrying the adder's invite |
+| Problem report | Opt-in NIP-17 message to the reports key, sealed by a throwaway key |
 | Relays | Per-user list, published as NIP-65 kind `10002`; readers query each contact's relays |
 | Keys | One secp256k1 key pair per app install, kept in the platform key store |
 
@@ -362,7 +365,8 @@ The app's default relays are chosen against this list. Candidate defaults, to be
 against it before release: `wss://relay.damus.io`, `wss://nos.lol`, `wss://relay.primal.net`.
 On 2026-11-05 nos.lol and relay.primal.net served a kind `1059` to anyone asking by `#p` and by
 id, while relay.damus.io accepted it and served it to nobody, with or without `AUTH`; requests
-to a default user therefore reach them through the other two.
+to a default user therefore reach them through the other two, and problem reports (section 8.8)
+go only to those two.
 
 ## 8. Client behaviour
 
@@ -370,8 +374,8 @@ to a default user therefore reach them through the other two.
 
 Sharing is off until the user turns it on. Until then the device only watches its contacts: it
 publishes nothing, kind `10002` and add-back requests included, and needs no location
-permission. Turning sharing
-off counts as switching `share` off for every contact (section 8.3).
+permission. Problem reports (section 8.8) have a setting of their own and carry no key of the
+user's. Turning sharing off counts as switching `share` off for every contact (section 8.3).
 
 A publisher publishes when:
 
@@ -511,6 +515,40 @@ the position, the reader:
 
 The name is that node's `name` tag.
 
+### 8.8 Problem reports
+
+A problem report tells the app's developer what went wrong on a phone. Sending reports is a
+setting of its own, off until the user turns it on, and apart from sharing.
+
+A report is a NIP-17 direct message to the reports key: a NIP-59 gift wrap as in section 4.5,
+whose rumor is kind `14` with one `p` tag naming the reports key and plain text as content.
+Unlike an add-back request, the seal is signed by a key made for that one report and then
+forgotten, never by the user's key, so neither a relay nor the holder of the reports key can tie
+a report to the user's key. The wrap's `expiration` is its `created_at` plus 30 days.
+
+The text is at most 8000 characters, cut at the end. It holds:
+
+- why it was sent: a failed share, a crash on an earlier run, or the user asking;
+- the app's version and build, the platform and its version, and the phone model;
+- the result of each setup check, with contacts counted rather than listed;
+- for a crash, its type and stack;
+- the app's last 50 log lines at info level or above.
+
+Before sending, a client removes from the text every invite link, NIP-19 entity, string of 64
+hex digits, relay URL outside the app's defaults and coordinate pair, and every name the user
+gave a contact. A report never holds a position, a place name, a contact's name or key, the
+user's key or invite, or a photo.
+
+A client sends a report:
+
+- when the user asks for one, after showing them its text, also with the setting off;
+- with the setting on, when a share fails or after the app crashed, at most once per 24 hours;
+  a crash waits until that allows, and is forgotten when the setting is off.
+
+Reports go to the report relays of section 10, not to the user's relays, so that they reach the
+reader of the reports key. The reports key and the report relays are those of whoever builds
+and ships the app; a fork uses its own.
+
 ## 9. Privacy and threat model
 
 What a relay operator, or anyone reading the relay, learns from the protocol:
@@ -523,13 +561,17 @@ What a relay operator, or anyone reading the relay, learns from the protocol:
 - that some key sent a kind `1059` to a public key, within two days of when, and that this
   public key asks for its own: the wrap names the recipient in its `p` tag and is signed by a
   throwaway key (section 4.5). Kind `1059` also carries NIP-17 direct messages, so the wrap alone
-  does not mark the recipient as a Mismeet user.
+  does not mark the recipient as a Mismeet user;
+- that some key sent a kind `1059` to the reports key, and the sender's IP address. A relay that
+  also sees that address publish a location event can guess which key sent a problem report
+  (section 8.8), but not what it says.
 
 What they do not learn:
 
 - any location, past or present;
 - who the recipients are, or whether two keys are contacts, from the events alone;
 - who sent an add-back request, or what it holds;
+- what a problem report holds;
 - the exact number of recipients.
 
 Other properties:
@@ -547,6 +589,9 @@ Other properties:
 - A reader that shows place names (section 8.7) asks the Overpass API for the place cells,
   about 10 km across, around every contact with a known position, which tells that server the
   reader's IP address and those cells.
+- The holder of the reports key reads each problem report, but learns from it no key, contact,
+  position or relay outside the defaults; the phone model, the app version and the times in it
+  remain.
 - Device compromise, and keys extracted from an unlocked phone, are out of scope.
 
 ## 10. Constants and limits
@@ -561,6 +606,13 @@ Other properties:
 | Add-back expiration | wrap `created_at + 2592000` seconds |
 | Add-back requests fetched per relay | at most 100 |
 | Name given in an add-back request | at most 64 characters |
+| Problem report rumor kind | `14`, NIP-17 chat message |
+| Problem report expiration | wrap `created_at + 2592000` seconds |
+| Problem report text | at most 8000 characters |
+| Automatic problem reports | at most one per 86400 seconds |
+| Log lines in a problem report | at most 50 |
+| Reports key | `npub1zvqr2zn45kdr0epvfc600z92sc7fdmhf8p46dz3e6tmwug8fk7fquge3l4` |
+| Report relays | `wss://nos.lol`, `wss://relay.primal.net` |
 | Content version | `1` |
 | Payload version | `1` |
 | Expiration | `created_at + 86400` seconds |
@@ -620,14 +672,16 @@ platform, and the protocol constants live in a single constants file per platfor
 8. A reader sends each relay only the authors associated with that relay.
 9. Invites round-trip through the invite link and `nostr:nprofile` with up to four relays, and
    the earlier invite link and `npub` input are accepted.
-10. Nothing is ever published except kinds `31122` and `10002`, and kind `1059` add-back
-    requests.
+10. Nothing is ever published except kinds `31122` and `10002`, kind `1059` add-back requests
+    and kind `1059` problem reports.
 11. An estimate follows section 8.6: the mode from `spd`, the ways each mode may use, the
     snap, the least turn at each node, and the speed, span and age limits.
 12. A place name follows section 8.7: the cells loaded, the place values and their order of
     preference, the 5 km limit and the tie rule.
 13. An add-back request follows section 4.5: the content, the wrap's kinds, tags and expiration,
     each reason to discard one, and the newest request per sender.
+14. A problem report follows section 8.8: the wrap's kinds, tags and expiration, a seal by a key
+    other than the user's, the length limit and each removal from the text.
 
 ## 13. Deviations from NIPs and open questions for review
 
@@ -659,12 +713,16 @@ platform, and the protocol constants live in a single constants file per platfor
 10. The add-back request uses NIP-59 without NIP-17: it is no direct message, and it goes to the
     contact's relay set rather than to kind `10050` inbox relays, which Mismeet users do not
     publish.
+11. Problem reports are NIP-17 messages, so that a NIP-17 client holding the reports key can
+    read them, but they go to the fixed report relays rather than to the kind `10050` inbox
+    relays NIP-17 asks for, which the app does not look up.
 
 ## 14. References
 
 - NIP-01, basic protocol flow and addressable events:
   https://github.com/nostr-protocol/nips/blob/master/01.md
 - NIP-11, relay information document: https://github.com/nostr-protocol/nips/blob/master/11.md
+- NIP-17, private direct messages: https://github.com/nostr-protocol/nips/blob/master/17.md
 - NIP-19, bech32 entities and `nprofile`: https://github.com/nostr-protocol/nips/blob/master/19.md
 - NIP-21, `nostr:` URI scheme: https://github.com/nostr-protocol/nips/blob/master/21.md
 - NIP-40, expiration timestamp: https://github.com/nostr-protocol/nips/blob/master/40.md
