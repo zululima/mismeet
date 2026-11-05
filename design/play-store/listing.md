@@ -53,15 +53,17 @@ First release. Add the people you know by their invite QR code and see them on a
 
 ## App content
 
-As submitted in Play Console on 2026-10-24, the sign in instructions as updated on 2026-10-27.
+As submitted in Play Console on 2026-10-24, the sign in instructions and Data safety as updated
+on 2026-11-05.
 
 - Privacy policy: the URL above.
 - Ads: no ads. Advertising ID: not used.
 - Sign in details: restricted, since Play counts QR codes and actions on another device. One
-  set named "Two devices, no account", with no username or password and these instructions:
+  set named "Two devices, no account", with no username or password and these instructions, at
+  most 500 characters:
 
   ```text
-  No account or login. Seeing a contact needs a second device. On both devices turn on Share my location on the Me tab and allow location, then all the time. On device A open the Me tab to show the invite QR code. On device B tap Add beside Contacts at the bottom of the map, then Scan QR code (or Paste after Copy link on A), type a name, tap Add. Within a minute, or after Refresh, A's contact list shows "Someone added you": tap Add back, type a name, tap Add. Within a minute, or after Share now, each device shows the other on the map and in its contact list. With one device, the Me tab shows the invite and the sharing switch.
+  No account or login. Testing needs two devices. On both, turn on Share my location on the Me tab and allow location all the time. A's Me tab shows the invite QR code. On B tap Add beside Contacts, Scan QR code (or Paste after Copy link on A), name it, tap Add. Within a minute, or after Refresh, A shows "Someone added you": tap Add back, name it, tap Add. Within a minute, or after Share now, each shows the other on the map. With one device, the Me tab shows the invite and sharing switch.
   ```
 
 - Content rating: category All Other App Types; the app shares the user's precise location
@@ -72,9 +74,10 @@ As submitted in Play Console on 2026-10-24, the sign in instructions as updated 
   Families policy, and the app has no age checks.
 - Data safety: App info and performance, Crash logs and Diagnostics, collected and not
   shared, not processed ephemerally, optional (users choose), for Analytics; no other data
-  collected or shared. These are the opt-in problem reports of `PRIVACY.md`, from version code
-  16. No deletion request: a report carries nothing that ties it to its sender, and the relays
-  drop it after 30 days. The developer runs no server; the location leaves the phone only
+  collected or shared; no account creation, and no sign in with an account made elsewhere.
+  These are the opt-in problem reports of `PRIVACY.md`, from version code 16. No deletion
+  request: a report carries nothing that ties it to its sender, and the relays drop it after
+  30 days. The developer runs no server; the location leaves the phone only
   end-to-end encrypted for the chosen contacts, which Play exempts from disclosure, and the
   app has no analytics service or ads. Data is encrypted in transit. The Nostr relays still see a public key, an IP address and publish times,
   and the Overpass API sees an IP address and the road and place name squares it serves, as
