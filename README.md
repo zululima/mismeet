@@ -9,11 +9,10 @@ its location to relays encrypted for each contact it shares with: no server, no 
 | --- | --- | --- | --- |
 | the protocol both apps follow | Swift and SwiftUI | Kotlin, no Play Services | [development](docs/development.md), [releasing](docs/releasing.md) |
 
-iPhones get Mismeet from the [App Store](https://apps.apple.com/app/id6823881355), and its next
-builds from [TestFlight](https://testflight.apple.com/join/a6MsWGZy). Android testers join
-[mismeet-testers](https://groups.google.com/g/mismeet-testers) (members are hidden), whose page
-leads on to Google Play. Play needs 12 of them for 14 days in a row: 5 are in, 7 to go, and the
-14 days start once all 12 are.
+iPhones get it from the [App Store](https://apps.apple.com/app/id6823881355), next builds from
+[TestFlight](https://testflight.apple.com/join/a6MsWGZy). Android testers join
+[mismeet-testers](https://groups.google.com/g/mismeet-testers) (members are hidden) for Google
+Play, which needs 12 of them for 14 days in a row: 5 are in, 7 to go, then the 14 days start.
 
 New here? Paste this into Claude Code:
 

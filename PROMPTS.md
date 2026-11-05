@@ -5,9 +5,15 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Link the App Store in the README
+## Fit the README on one screen again
 
 2026-11-05, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**8.** (answer to: shall I add the App Store link to the README?) Quoted under [23e0265](https://github.com/zululima/mismeet/commit/23e0265162c31b9182f0f16503097b077951539d).
+
+## Link the App Store in the README
+
+2026-11-05, commit [23e0265](https://github.com/zululima/mismeet/commit/23e0265162c31b9182f0f16503097b077951539d), model claude-opus-5-5, effort xhigh.
 
 **8.** (answer to: shall I add the App Store link to the README?)
 > Yes, add it
