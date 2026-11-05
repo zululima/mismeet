@@ -89,9 +89,13 @@ Not applicable. The app does not operate in a regulated industry and contains no
 
 ## App Privacy
 
-From build 19 the app has opt-in problem reports, so App Privacy is no longer Data Not
-Collected. Diagnostics: Crash Data and Other Diagnostic Data, not linked to the user's
-identity, not used for tracking, for App Functionality. No other data type is collected.
+App Store Connect says Data Not Collected, which is right for 0.1.0 (build 2), on the App
+Store since 2026-11-05: its Data Collection dialog asks for the data the version on the App
+Store collects, and it locks the answers while a version waits in review. From build 19 the
+app has opt-in problem reports, so the first version submitted with build 19 or later changes
+the answers, right before it goes to review, to Diagnostics: Crash Data and Other Diagnostic
+Data, not linked to the user's identity, not used for tracking, for App Functionality. No
+other data type is collected.
 
 ## TestFlight
 

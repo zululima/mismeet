@@ -5,9 +5,16 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Record the Play sign in instructions and Data safety as entered
+## Keep App Privacy at Data Not Collected until build 19 is in review
 
 2026-11-05, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**7.**
+> both done [an ask about Chrome's password saving left out]
+
+## Record the Play sign in instructions and Data safety as entered
+
+2026-11-05, commit [0a6ed60](https://github.com/zululima/mismeet/commit/0a6ed60f1fdb035984192ea461539cb61799d5ba), model claude-opus-5-5, effort xhigh.
 
 **6.**
 > 1. done why cant you do other steps
