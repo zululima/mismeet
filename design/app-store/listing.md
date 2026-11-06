@@ -48,6 +48,20 @@ location,sharing,friends,family,map,privacy,encrypted,nostr,find,where,meet
 - Screenshots: `iphone-6.9/` for the large display, `iphone-6.3/` for the medium one, in file
   order.
 
+What's New in This Version, the version's `CHANGELOG.md` section without the heading, here for
+0.2.0:
+
+```text
+- Sharing is off until you turn on Share my location on the Me tab. Until then you only watch your contacts, and the app needs no location permission.
+- The contact list is a panel over the map. Tap a contact, or their picture on the map, to see the district or town they were in, how long ago, how far away, and directions there.
+- A moving contact's estimated position follows the roads for a few minutes.
+- Give each contact a photo, cropped to a circle.
+- Invites are links that open the app, and adding someone sends them a request to add you back with one tap.
+- Check setup on the Me tab tests everything sharing needs.
+- Problem reports, off until you turn them on, tell the developer about a failed share or a crash, without your key, names or positions.
+- Dark mode.
+```
+
 ## App Review notes
 
 ```text

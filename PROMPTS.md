@@ -5,9 +5,21 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
+## Release iOS 0.2.0 to the App Store
+
+2026-11-06, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**1.**
+> can you make it so in mismeet that when google play testers and
+> testflight testers install the real deal the data moves to the
+> production one too?
+
+**2.** (answer to: shall I release the current iOS code as 0.2.0?)
+> Yes, release 0.2.0
+
 ## Fit the README on one screen again
 
-2026-11-05, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+2026-11-05, commit [8346618](https://github.com/zululima/mismeet/commit/83466182ee0e4a236243be022afe00479e311302), model claude-opus-5-5, effort xhigh.
 
 **8.** (answer to: shall I add the App Store link to the README?) Quoted under [23e0265](https://github.com/zululima/mismeet/commit/23e0265162c31b9182f0f16503097b077951539d).
 
