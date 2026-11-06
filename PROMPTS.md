@@ -5,9 +5,18 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Publish Play's APK as a GitHub release and record App Privacy
+## Link the Android APK in the README
 
 2026-11-06, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**3.** (answer to: have you signed in to App Store Connect in Chrome?) Quoted under [9862cc2](https://github.com/zululima/mismeet/commit/9862cc299465c4f12d560a268c652b0b16e6d47e).
+
+**4.** (answer to: have you run the script that allows the APK release?)
+> Ran it
+
+## Publish Play's APK as a GitHub release and record App Privacy
+
+2026-11-06, commit [9862cc2](https://github.com/zululima/mismeet/commit/9862cc299465c4f12d560a268c652b0b16e6d47e), model claude-opus-5-5, effort xhigh.
 
 **3.** (answer to: have you signed in to App Store Connect in Chrome?)
 > signed in also make it so that an apk download link is in the readme
