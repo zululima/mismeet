@@ -30,7 +30,8 @@ it is the upload key: Play App Signing re-signs every bundle with an app signing
 keeps, and Play Console can reset a lost upload key. Zapstore instead links the key's
 certificate to the publisher's Nostr identity and needs the same signature on every update, so
 a lost key there means a new listing. Because Play re-signs, an install from Play and an
-install from Zapstore cannot update each other.
+install from Zapstore cannot update each other. The APK on the GitHub releases is Play's own,
+so an install from it and one from Play update each other.
 
 Once, create the key and keep a backup:
 
@@ -120,10 +121,19 @@ For each test build:
    ```
 
 3. Build the signed bundle from the tag and release it to the closed testing track, which
-   Google reviews before testers get it:
+   Google reviews before testers get it. The script then publishes Google Play's own
+   universal APK of the build, signed with the app signing key, as the GitHub release of the
+   tag, which the README's APK link follows; this needs `gh` signed in with write access to
+   the repository.
 
    ```bash
    scripts/release.sh upload-android
+   ```
+
+   When Play has not made the APK within two minutes, publish it later:
+
+   ```bash
+   scripts/release.sh apk-android
    ```
 
 For a release, raise `versionName`, `versionCode` and `CHANGELOG.md`, commit, push and tag as

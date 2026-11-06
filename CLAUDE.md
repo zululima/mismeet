@@ -124,7 +124,10 @@ follows it, and a protocol change edits the spec first, in the same change.
   `CURRENT_PROJECT_VERSION` or `versionCode` in the pushed commit, then run
   `scripts/release.sh tag <platform>` and `upload-ios` for TestFlight or `upload-android` for
   Play's closed testing track, which goes through the Play Developer API with the service
-  account key that the git-ignored `android/.play-key` names. A push that changes neither app
+  account key that the git-ignored `android/.play-key` names. `upload-android` then publishes
+  Play's universal APK of the build, signed with the app signing key, as the GitHub release of
+  its tag, which the README's link `releases/latest/download/mismeet.apk` follows;
+  `apk-android` publishes it alone when Play was slow to make it. A push that changes neither app
   ships nothing. A store release happens only when the user says release or new release, and
   the session picks the version from the changes since the last release: patch for fixes
   alone, minor when users get something new, major when the protocol changes in a way older

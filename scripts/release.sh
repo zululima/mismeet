@@ -9,10 +9,13 @@
 #   scripts/release.sh upload-ios              check, archive and upload to App Store Connect, which
 #                                              offers the build in TestFlight and for App Store review
 #   scripts/release.sh upload-android          check, build the bundle and release it to the closed
-#                                              testing track through the Play Developer API
+#                                              testing track through the Play Developer API, then
+#                                              publish the APK as apk-android does
 #   scripts/release.sh upload-android production
 #                                              check, build the bundle and put it in a production
-#                                              draft, rolled out in Play Console
+#                                              draft, rolled out in Play Console, then publish the APK
+#   scripts/release.sh apk-android             publish Play's universal APK of the current Android
+#                                              tag as the GitHub release the README links
 set -euo pipefail
 
 root="$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
@@ -175,6 +178,41 @@ upload_android() {
   else
     echo "Uploaded $tag as a production draft. Roll it out under Production in Play Console."
   fi
+  publish_apk "$tag" "$token"
+}
+
+# Play's universal APK is signed with the app signing key, as every install from Play is, so a
+# phone that took the APK can later update from Play with its key and contacts kept.
+publish_apk() {
+  local tag="$1" token="$2" code api id dir tries=0
+  code="${tag##*-}"
+  api="https://androidpublisher.googleapis.com/androidpublisher/v3/applications/app.mismeet.android/generatedApks/$code"
+  until id="$(curl -fsS -H "Authorization: Bearer $token" "$api" \
+    | jq -er '.generatedApks[0].generatedUniversalApk.downloadId // empty | @uri')"; do
+    tries=$((tries + 1))
+    if [ "$tries" -ge 12 ]; then
+      echo "Play has no universal APK of $tag yet. Run later: scripts/release.sh apk-android" >&2
+      exit 1
+    fi
+    sleep 10
+  done
+  dir="$(mktemp -d)"
+  curl -fsS -L -H "Authorization: Bearer $token" -o "$dir/mismeet.apk" "$api/downloads/$id:download?alt=media"
+  gh release create "$tag" "$dir/mismeet.apk" --repo zululima/mismeet --verify-tag --latest \
+    --title "Android ${tag#android-}" \
+    --notes "Google Play's signed APK of $tag, for Android 10 and later. Changes are in CHANGELOG.md."
+  rm -r "$dir"
+  echo "Published https://github.com/zululima/mismeet/releases/tag/$tag"
+}
+
+apk_android() {
+  local tag
+  tag="$(version android)"
+  if ! git -C "$root" rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+    echo "No tag $tag. Upload it first: scripts/release.sh upload-android" >&2
+    exit 1
+  fi
+  publish_apk "$tag" "$(play_token "$(cat "$root/android/.play-key")")"
 }
 
 case "${1:-}" in
@@ -184,5 +222,6 @@ case "${1:-}" in
   archive-ios) archive_ios ;;
   upload-ios) upload_ios ;;
   upload-android) upload_android "${2:-}" ;;
-  *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+  apk-android) apk_android ;;
+  *) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

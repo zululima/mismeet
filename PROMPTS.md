@@ -5,9 +5,17 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Release iOS 0.2.0 to the App Store
+## Publish Play's APK as a GitHub release and record App Privacy
 
 2026-11-06, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**3.** (answer to: have you signed in to App Store Connect in Chrome?)
+> signed in also make it so that an apk download link is in the readme
+> android 11 at least and surely the app is not bigger than 200mb
+
+## Release iOS 0.2.0 to the App Store
+
+2026-11-06, commit [9c50880](https://github.com/zululima/mismeet/commit/9c50880130d3819bc53ceda1346a4b5dee3e22c5), model claude-opus-5-5, effort xhigh.
 
 **1.**
 > can you make it so in mismeet that when google play testers and
@@ -973,6 +981,7 @@ text in CLAUDE.md?)
 - ight: alright
 - kmh: kilometres per hour
 - llms: large language models
+- mb: megabytes
 - npub: a Nostr public key in its NIP-19 text form
 - npub: Nostr public key, bech32 encoded
 - npubs: Nostr public keys in their bech32 form
