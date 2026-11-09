@@ -5,6 +5,16 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
+## Compare Mismeet with the location sharing apps people know
+
+2026-11-09, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**1.** Quoted under [8c23d99](https://github.com/zululima/mismeet/commit/8c23d99ec50533a8dfae559472935ecb341b6159).
+
+**2.** Quoted under [8c23d99](https://github.com/zululima/mismeet/commit/8c23d99ec50533a8dfae559472935ecb341b6159).
+
+**3.** Quoted under [8c23d99](https://github.com/zululima/mismeet/commit/8c23d99ec50533a8dfae559472935ecb341b6159).
+
 ## Ask before sharing with a new contact and follow Find My's layout
 
 2026-11-09, commit [b38eb57](https://github.com/zululima/mismeet/commit/b38eb5762a66b8b1f3f41db11f8b7f5a01a4bc13), model claude-opus-5-5, effort xhigh.
