@@ -152,10 +152,11 @@ follows it, and a protocol change edits the spec first, in the same change.
   its failure, and each relay, by asking it for this phone's own location event. A new reason
   sharing can fail gets a check there on both platforms.
 - The App Store listing text, from the subtitle and categories to the notes for App Review,
-  lives in `design/app-store/listing.md`: change it there and commit, then enter it in App
-  Store Connect, never only in the browser. Its App Privacy answers describe the version on
-  the App Store, so a version whose build collects other data changes them right before it
-  goes to review, since App Store Connect locks them while a version waits there.
+  lives in `design/app-store/listing.md`: change it there and commit, then the session enters
+  it in App Store Connect itself, in Claude in Chrome, when the version goes to review, never
+  as a step for the user and never only in the browser. Its App Privacy answers describe the
+  version on the App Store, so a version whose build collects other data changes them right
+  before it goes to review, since App Store Connect locks them while a version waits there.
 - Every store build comes from an annotated tag `<platform>-<version>-<build>` made by
   `scripts/release.sh tag`. `assembleRelease`, `bundleRelease` and `scripts/release.sh archive-ios` refuse to
   run unless the tree is clean and `HEAD` is that tag; `-PuntaggedRelease` skips the Android

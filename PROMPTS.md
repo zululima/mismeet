@@ -5,9 +5,16 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Send problem reports to offchain.pub instead of relay.nostr.net
+## Have the session enter the App Store listing text itself
 
 2026-11-09, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**7.**
+> we all stopped using testflight well just test in production
+
+## Send problem reports to offchain.pub instead of relay.nostr.net
+
+2026-11-09, commit [03c0bf9](https://github.com/zululima/mismeet/commit/03c0bf964f1e3cd50ead20945d0b37e28c885b33), model claude-opus-5-5, effort xhigh.
 
 **6.** (answer to: shall I swap relay.nostr.net for offchain.pub in the    report relays?)
 > Yes, swap it
