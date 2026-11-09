@@ -4,6 +4,22 @@ Store releases, newest first, in the [Keep a Changelog](https://keepachangelog.c
 Zapstore reads the section whose version matches the published APK as its release notes, and
 Google Play's release notes repeat it.
 
+## [0.3.0] - 2026-11-09
+
+- Adding a contact asks whether to share your location with them, and for how long: one hour,
+  until the end of the day, or until you stop. The switch is in the contact's card.
+- The map follows the layout of Find My: the contact list is a panel over the full map, and the
+  buttons at the bottom right show everyone, someone abroad or you.
+- The app asks for your name once at the start, which you can skip. A request without a name
+  shows Unknown.
+- An iPhone that stays in one place keeps sharing, so its contacts no longer lose it after a
+  day.
+- The Me tab fits one screen. Share now, the last share and problem reports are under Check
+  setup.
+- Finnish, when the phone's language is Finnish.
+- Relays: relay.nostr.net replaces nos.lol, which stopped answering, and problem reports go to
+  offchain.pub and relay.primal.net.
+
 ## [0.2.0] - 2026-11-06
 
 - Sharing is off until you turn on Share my location on the Me tab. Until then you only watch

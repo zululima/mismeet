@@ -28,7 +28,7 @@ Your phone publishes its location to Nostr relays, encrypted separately for each
 
 - Add a contact by scanning the QR code of their invite, or by pasting it.
 - Watch your contacts without sharing anything yourself: sharing is off until you turn it on, and until then the app needs no location permission.
-- Choose for each contact whether you share your location with them.
+- Choose for each contact whether you share your location with them, and for how long: an hour, until the end of the day or until you stop.
 - See everyone on the map at a glance, with where and how long ago each position was seen and how far each person is from you.
 - Your location updates in the background as you move.
 - No sign-up, no email, no phone number. Your identity is a key that stays on your phone.
@@ -49,17 +49,16 @@ location,sharing,friends,family,map,privacy,encrypted,nostr,find,where,meet
   order.
 
 What's New in This Version, the version's `CHANGELOG.md` section without the heading, here for
-0.2.0:
+0.3.0:
 
 ```text
-- Sharing is off until you turn on Share my location on the Me tab. Until then you only watch your contacts, and the app needs no location permission.
-- The contact list is a panel over the map. Tap a contact, or their picture on the map, to see the district or town they were in, how long ago, how far away, and directions there.
-- A moving contact's estimated position follows the roads for a few minutes.
-- Give each contact a photo, cropped to a circle.
-- Invites are links that open the app, and adding someone sends them a request to add you back with one tap.
-- Check setup on the Me tab tests everything sharing needs.
-- Problem reports, off until you turn them on, tell the developer about a failed share or a crash, without your key, names or positions.
-- Dark mode.
+- Adding a contact asks whether to share your location with them, and for how long: one hour, until the end of the day, or until you stop. The switch is in the contact's card.
+- The map follows the layout of Find My: the contact list is a panel over the full map, and the buttons at the bottom right show everyone, someone abroad or you.
+- The app asks for your name once at the start, which you can skip. A request without a name shows Unknown.
+- An iPhone that stays in one place keeps sharing, so its contacts no longer lose it after a day.
+- The Me tab fits one screen. Share now, the last share and problem reports are under Check setup.
+- Finnish, when the phone's language is Finnish.
+- Relays: relay.nostr.net replaces nos.lol, which stopped answering, and problem reports go to offchain.pub and relay.primal.net.
 ```
 
 ## App Review notes
@@ -69,7 +68,7 @@ Mismeet needs no account: each install creates its own key on the device.
 
 Location: sharing is off until the user turns on Share my location on the Me tab; until then the app only shows contacts and needs no location permission. Turned on, it asks for location while in use, then Always. With Always it publishes the user's position, end-to-end encrypted, while the app is closed: on leaving a region of 150 m around the last position, on significant location changes, and in Background App Refresh (the fetch background mode), which republishes a phone that stays in one place before its last position expires after 24 hours. It publishes only for contacts the user chose to share with, for the time they chose (one hour, until the end of the day or indefinitely), and nothing when there are none.
 
-To try it, use two devices. On each, open the Me tab to show the invite QR code. On the other, tap + beside Contacts at the bottom of the map, then Scan QR code, and add it. Within a minute each phone shows the other on the map. With one device, the Me tab shows the invite and the map shows your own position.
+To try it, use two devices. On each, open the Me tab to show the invite QR code. On the other, tap + beside Contacts at the bottom of the map, then Scan QR code, and add it. The app then asks whether to share with that contact and for how long; choose a length on both phones. Within a minute each phone shows the other on the map. With one device, the Me tab shows the invite and the map shows your own position.
 ```
 
 ## Answers to App Review's request for more information
@@ -111,6 +110,10 @@ Collection dialog asks for the data the version on the App Store collects, and A
 Connect locks the answers while a version waits in review.
 
 ## TestFlight
+
+Not used since 2026-11-09, when the testers stopped using TestFlight: each build pushed to
+`main` goes to App Review instead. The texts below stay for the external group, which still
+exists.
 
 The external group "Public" hands out a public link, with no tester limit, and needs each new
 version's first build to pass Beta App Review. Test Information holds the texts below, the

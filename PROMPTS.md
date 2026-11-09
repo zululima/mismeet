@@ -5,9 +5,18 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Have the session enter the App Store listing text itself
+## Ship every iOS push to App Review instead of TestFlight
 
 2026-11-09, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**7.** Quoted under [3a4dfe0](https://github.com/zululima/mismeet/commit/3a4dfe0899670c7a0c2afc32c2b0222858d96598).
+
+**8.** (answer to: shall each push that changes iOS go straight to App    Review instead of TestFlight?)
+> Yes, each push
+
+## Have the session enter the App Store listing text itself
+
+2026-11-09, commit [3a4dfe0](https://github.com/zululima/mismeet/commit/3a4dfe0899670c7a0c2afc32c2b0222858d96598), model claude-opus-5-5, effort xhigh.
 
 **7.**
 > we all stopped using testflight well just test in production

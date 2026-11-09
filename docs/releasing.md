@@ -17,11 +17,11 @@ any published binary is exactly the tagged commit. The version and build number 
 creates and pushes the tag, and the release builds refuse to run unless the tree is clean and
 `HEAD` is that tag. Each release also gets a section in [`CHANGELOG.md`](../CHANGELOG.md).
 
-Every push to `main` that changes an app also ships a test build of it: the push raises the
-build number, the commit is tagged, and the build goes to TestFlight or to Play's closed
-testing track. Only a release goes to the App Store and to Play production, with its version
-raised as semantic versioning says: patch for fixes, minor for new features, major for a
-protocol change older apps cannot read.
+Every push to `main` that changes an app also ships it: the push raises the build number,
+the commit is tagged, and the iOS build goes to App Review as the next App Store version,
+the Android build to Play's closed testing track. Only a release goes to Play production.
+A new version is raised as semantic versioning says: patch for fixes, minor for new
+features, major for a protocol change older apps cannot read.
 
 ## Android release key
 
@@ -199,17 +199,17 @@ For each release:
    SIGN_WITH=browser ~/go/bin/zsp publish --commit "$(git rev-parse HEAD)" zapstore.yaml
    ```
 
-## iOS on TestFlight and the App Store
+## iOS on the App Store
 
 Uploading needs a paid Apple Developer Program membership; the free personal team used for
-development cannot distribute. Every upload goes to App Store Connect, where it is a TestFlight
-build first. A release to the App Store submits one of those tested builds for review, so the
-binary users get is the one that was tested, and it is already tagged.
+development cannot distribute. Every upload goes to App Store Connect, and each build pushed
+to `main` goes to App Review as the next App Store version; testers update from the App Store,
+not TestFlight. The binary users get is already tagged.
 
 Once App Review approves a version, App Store Connect takes no more builds of it: an upload
 fails with "Invalid Pre-Release Train", since the train of that version is closed. The next
-test build after an approval therefore also raises `MARKETING_VERSION` in `ios/project.yml` to
-the version the next release will be.
+build after an approval therefore also raises `MARKETING_VERSION` in `ios/project.yml` to the
+next version.
 
 Once, after the membership is active:
 
@@ -263,14 +263,12 @@ For each build:
    scripts/release.sh upload-ios
    ```
 
-4. Wait until App Store Connect has processed the build, usually minutes, then open the app's
-   TestFlight tab. The first build asks the export compliance question there: the app
-   encrypts locations end to end with NIP-44 (ChaCha20 and secp256k1), beyond the operating
-   system's encryption, and the Info.plist leaves the answer to you.
-5. Under Internal Testing, add yourself as a tester. Install TestFlight from the App Store on
-   the iPhone and install the build from it. TestFlight builds expire after 90 days.
+4. Wait until App Store Connect has processed the build, usually minutes. The export
+   compliance question does not come up: `ITSAppUsesNonExemptEncryption` is `false` in
+   `ios/project.yml`, since the app uses only standard encryption (NIP-44, ChaCha20 and
+   secp256k1) and is not distributed in France.
 
-To release a tested build on the App Store:
+Then submit it:
 
 1. In App Store Connect, open the app's version page under iOS App, creating the version if it
    is not there, and set its version to the build's `MARKETING_VERSION`. The listing text is in
@@ -280,10 +278,12 @@ To release a tested build on the App Store:
    keywords, the support URL (this repository works), the privacy policy URL
    <https://github.com/zululima/mismeet/blob/main/PRIVACY.md>, the App Privacy answers, the
    age rating and the category.
-2. Under Build, choose the TestFlight build you tested.
-3. In App Review Information, explain the "Always" location: the app publishes on significant
-   location changes while closed, to the contacts the user chose. Then click Add for Review
-   and submit. Once approved, the version goes live when you release it.
+2. Under Build, choose the build just uploaded.
+3. Under Version Release, choose to release the version automatically after approval.
+4. In App Review Information, paste the App Review notes from `design/app-store/listing.md`,
+   which explain the "Always" location. Then click Add for Review and submit. A build pushed
+   while the version waits for review replaces it: cancel the submission on its App Review
+   page, choose the new build and submit again.
 
 The screenshots come from the iPhone 18 Pro Max and iPhone 17 simulators with a fixed status
 bar and the contacts Aino and Eero published by the fake publisher.

@@ -114,7 +114,7 @@ follows it, and a protocol change edits the spec first, in the same change.
 
 - Android goes to Google Play as an app bundle from `bundleRelease`, signed with the upload
   key and re-signed by Play App Signing with a key Google generated; `zapstore.yaml` also
-  describes it for Zapstore (not F-Droid). iOS goes to TestFlight and the App Store through
+  describes it for Zapstore (not F-Droid). iOS goes to the App Store through
   `scripts/release.sh upload-ios`, which archives from the tag and uploads with the build
   numbers kept; Xcode signs the upload with a cloud-managed distribution certificate, so none
   is created on this Mac. It authenticates with the App Store Connect API key that the
@@ -126,26 +126,34 @@ follows it, and a protocol change edits the spec first, in the same change.
   disclosure dialog on the Me screen has to come right before each location permission
   request, as Play's policy demands.
 - Every push to `main` that changes what an app is built from (`ios/` for iOS, `android/` for
-  Android) ships a test build of that app, by the user's standing go: raise
-  `CURRENT_PROJECT_VERSION` or `versionCode` in the pushed commit, and after App Review has
-  approved the current `MARKETING_VERSION` that too, to the next release's version, since App
-  Store Connect then refuses builds of the approved one ("Invalid Pre-Release Train"); then run
-  `scripts/release.sh tag <platform>` and `upload-ios` for TestFlight or `upload-android` for
-  Play's closed testing track, which goes through the Play Developer API with the service
-  account key that the git-ignored `android/.play-key` names. `upload-android` then publishes
-  Play's universal APK of the build, signed with the app signing key, as the GitHub release of
-  its tag, which the README's link `releases/latest/download/mismeet.apk` follows;
-  `apk-android` publishes it alone when Play was slow to make it. A push that changes neither app
-  ships nothing. A store release happens only when the user says release or new release, and
-  the session picks the version from the changes since the last release: patch for fixes
-  alone, minor when users get something new, major when the protocol changes in a way older
-  apps cannot read (a new `d` tag, spec section 11). It raises `MARKETING_VERSION` and
-  `versionName` to that version, adds the `CHANGELOG.md` section and ships the iOS test build,
-  which it then submits for App Store review. For Android it raises `versionCode` as for a
-  test build but runs `upload-android production`, which puts the store build in a production
-  draft, and rolls that out in Play Console with the user's declarations; testers get it too,
-  since Play serves the highest version code of the tracks they are in. Never run `zsp
-  publish`, which signs with the user's own Nostr key.
+  Android) ships that app, by the user's standing go, and raises `CURRENT_PROJECT_VERSION` or
+  `versionCode` in the pushed commit. A push that changes neither app ships nothing. The
+  session picks a new version from the changes since the last one: patch for fixes alone,
+  minor when users get something new, major when the protocol changes in a way older apps
+  cannot read (a new `d` tag, spec section 11).
+  - iOS goes to the App Store with every such push, not to TestFlight, which the testers
+    stopped using on 2026-11-09. Once App Review has approved the current `MARKETING_VERSION`,
+    the push raises it to the next version, since App Store Connect refuses builds of an
+    approved one ("Invalid Pre-Release Train"), and adds its `CHANGELOG.md` section; a push
+    before that approval adds its change to the open section. Then the session runs
+    `scripts/release.sh tag ios` and `upload-ios` and, once the build is valid, attaches it to
+    that version in App Store Connect, enters the listing text and What's New from
+    `design/app-store/listing.md`, and submits the version for review with release after
+    approval. A push while the version waits for review cancels that submission, attaches the
+    new build and submits again, which puts it at the back of the queue; a version App Review
+    is already reviewing keeps its build, and the new one goes with the next version.
+  - Android goes to Play's closed testing track: `scripts/release.sh tag android` and
+    `upload-android`, which goes through the Play Developer API with the service account key
+    that the git-ignored `android/.play-key` names. `upload-android` then publishes Play's
+    universal APK of the build, signed with the app signing key, as the GitHub release of its
+    tag, which the README's link `releases/latest/download/mismeet.apk` follows;
+    `apk-android` publishes it alone when Play was slow to make it. An Android store release
+    happens only when the user says release or new release: the session raises `versionName`
+    to the version picked as above, adds the `CHANGELOG.md` section, raises `versionCode` and
+    runs `upload-android production`, which puts the store build in a production draft, and
+    rolls that out in Play Console with the user's declarations; testers get it too, since
+    Play serves the highest version code of the tracks they are in. Never run `zsp publish`,
+    which signs with the user's own Nostr key.
 - The app shows no log in any build; it writes to the system log only (Console.app and
   logcat), and its last 50 lines go only into problem reports. For people, "Check setup" on the Me screen tests what sharing needs, in the style
   of Slack's connection test: permissions, battery and data restrictions, the last share and
