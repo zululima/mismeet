@@ -15,16 +15,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.BottomSheetScaffold
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SheetValue
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberBottomSheetScaffoldState
@@ -46,10 +50,13 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.LifecycleStartEffect
 import app.mismeet.android.AppModel
+import app.mismeet.android.R
 import app.mismeet.android.location.Countries
 import app.mismeet.android.store.Contact
 import app.mismeet.protocol.EstimateResult
@@ -80,8 +87,9 @@ import org.osmdroid.views.overlay.Polyline
 /**
  * OpenStreetMap tiles through osmdroid: no Google dependency, and the tile policy wants a user
  * agent. Opens framed around the people in this phone's country, like Find My, again each time the
- * app comes back, and follows them as they move until the map is moved by hand; the button at the
- * bottom returns there, and a second tap widens to everyone, abroad included. The contact list is
+ * app comes back, and follows them as they move until the map is moved by hand; the people button
+ * at the bottom right returns there, a second tap widens to everyone, abroad included, and the
+ * arrow below it centres on this phone, as the two buttons of Find My do. The contact list is
  * a sheet over the map, peeking at about a third of the screen as Find My's does, and the
  * [focused] contact, tapped in it or on the map, is framed with its card in the sheet until it is
  * closed.
@@ -192,17 +200,17 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
                         Avatar(contact, model.photo(contact), 48.dp, Modifier.size(48.dp))
                         Column(Modifier.weight(1f)) {
                             Text(contact.name, style = MaterialTheme.typography.titleLarge)
-                            Text(status(contact, placeNames[contact.id]), style = MaterialTheme.typography.bodyMedium)
+                            Text(status(context, contact, placeNames[contact.id]), style = MaterialTheme.typography.bodyMedium)
                         }
-                        IconButton(onClick = onUnfocus) { Icon(Icons.Filled.Close, contentDescription = "Close") }
+                        IconButton(onClick = onUnfocus) { Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.close)) }
                     }
                     Row(Modifier.padding(end = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Button(onClick = { openMap(context, contact) }) { Text("Directions") }
-                        distance(contact, state)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
+                        Button(onClick = { openMap(context, contact) }) { Text(stringResource(R.string.directions)) }
+                        distance(context, contact, state)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                     }
                     if (state.sharingEnabled) {
                         Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text("Share my location", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                            Text(stringResource(R.string.share_my_location), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
                             Switch(checked = contact.share, onCheckedChange = { model.setShare(contact.id, it) })
                         }
                     }
@@ -266,8 +274,9 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
                                 position = GeoPoint(estimate.point.latitude, estimate.point.longitude)
                                 icon = BitmapDrawable(view.resources, avatar)
                                 alpha = 0.45f
-                                title = "${contact.name}, estimated"
-                                snippet = "Guessed along the road from the last fix, ${movement(payload)}"
+                                title = context.getString(R.string.estimated_title, contact.name)
+                                snippet = movement(context, payload)?.let { context.getString(R.string.estimated_snippet_moving, it) }
+                                    ?: context.getString(R.string.estimated_snippet)
                                 setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                                 setOnMarkerClickListener { _, _ ->
                                     onFocus(contact.id)
@@ -280,7 +289,7 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
                             position = GeoPoint(payload.latitude, payload.longitude)
                             icon = BitmapDrawable(view.resources, if (size == markerSize) avatar else avatarBitmap(contact, model.photo(contact), size))
                             title = contact.name
-                            snippet = status(contact, placeNames[contact.id])
+                            snippet = status(context, contact, placeNames[contact.id])
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                             setOnMarkerClickListener { _, _ ->
                                 onFocus(contact.id)
@@ -292,7 +301,7 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
                         view.overlays += Marker(view).apply {
                             position = GeoPoint(fix.latitude, fix.longitude)
                             icon = BitmapDrawable(view.resources, ownPositionBitmap(markerSize / 2))
-                            title = "You"
+                            title = context.getString(R.string.you)
                             setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
                         }
                     }
@@ -310,11 +319,40 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
                 onRelease = { view -> view.onDetach() },
             )
             val widen = focusedContact == null && someoneAbroad && framing == Framing.NEARBY && !moved
-            Button(
-                onClick = { if (focusedContact != null) onUnfocus() else map[0]?.let { show(it, if (widen) Framing.EVERYONE else Framing.NEARBY) } },
+            val framingLabel = if (someoneAbroad && !widen) {
+                countryName(home, LocalConfiguration.current.locales[0]) ?: stringResource(R.string.home)
+            } else {
+                stringResource(R.string.everyone)
+            }
+            Surface(
                 modifier = Modifier.align(Alignment.BottomEnd)
-                    .padding(end = 16.dp, bottom = with(LocalDensity.current) { sheetPixels.toDp() } + 16.dp),
-            ) { Text(if (someoneAbroad && !widen) countryName(home) else "Everyone") }
+                    .padding(end = 12.dp, bottom = with(LocalDensity.current) { sheetPixels.toDp() } + 12.dp),
+                shape = RoundedCornerShape(10.dp),
+                tonalElevation = 3.dp,
+                shadowElevation = 4.dp,
+            ) {
+                Column(Modifier.width(44.dp)) {
+                    IconButton(
+                        onClick = { if (focusedContact != null) onUnfocus() else map[0]?.let { show(it, if (widen) Framing.EVERYONE else Framing.NEARBY) } },
+                        modifier = Modifier.size(44.dp),
+                    ) {
+                        Icon(painterResource(if (widen) R.drawable.ic_globe else R.drawable.ic_people), contentDescription = framingLabel, tint = MaterialTheme.colorScheme.primary)
+                    }
+                    HorizontalDivider()
+                    IconButton(
+                        onClick = {
+                            if (focusedContact != null) onUnfocus()
+                            own?.let { fix -> map[0]?.controller?.animateTo(GeoPoint(fix.latitude, fix.longitude), OWN_ZOOM, OWN_ANIMATION_MILLIS) }
+                            framedAt = null
+                            moved = true
+                        },
+                        enabled = own != null,
+                        modifier = Modifier.size(44.dp),
+                    ) {
+                        Icon(painterResource(R.drawable.ic_near_me), contentDescription = stringResource(R.string.my_location), tint = if (own != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
+                    }
+                }
+            }
         }
     }
 }
@@ -322,6 +360,8 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
 private enum class Framing { NEARBY, EVERYONE }
 
 private const val ESTIMATE_REFRESH_MILLIS = 10_000L
+private const val OWN_ZOOM = 16.0
+private const val OWN_ANIMATION_MILLIS = 600L
 private const val LIST_HEIGHT = 0.85f
 private const val PEEK_FRACTION = 0.36f
 private const val ESTIMATE_COLOUR = 0xCC5E35B1.toInt()
@@ -351,8 +391,8 @@ private fun points(
     (located.filter { keep(it.position()) }.flatMap { listOfNotNull(it.position(), estimates[it.id]?.point) } + listOfNotNull(own?.takeIf(keep)))
         .map { GeoPoint(it.latitude, it.longitude) }
 
-private fun countryName(code: String?): String =
-    code?.let { runCatching { Locale.Builder().setRegion(it).build().displayCountry }.getOrNull() }?.ifBlank { null } ?: "Home"
+private fun countryName(code: String?, language: Locale): String? =
+    code?.let { runCatching { Locale.Builder().setRegion(it).build().getDisplayCountry(language) }.getOrNull() }?.ifBlank { null }
 
 /** Frames a focused contact with the circle of its accuracy, and at least 350 m across, as close as Find My. */
 private fun frameAround(map: MapView, point: GeoPoint, accuracy: Int, sheetPixels: Int) {

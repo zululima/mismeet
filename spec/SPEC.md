@@ -91,13 +91,16 @@ the contact exists once the user confirms. Adding a contact has two effects on t
 - Sharing: the adder's location events include a real entry for the contact.
 - Watching: the adder's reader fetches and decrypts the contact's location events.
 
-Sharing can be switched off per contact (`share` flag, default on). Watching is always on; when
-the contact has not added the adder, the reader finds no entry it can decrypt and shows the
+Sharing can be switched off per contact (`share` flag). A new contact starts with `share` off:
+right after adding, the app asks whether to share the user's location with them, and only a yes
+turns `share` on, together with sharing itself (section 8.1) when that was off. A stored record
+without the flag, written before this question existed, reads it as on. Watching is always on;
+when the contact has not added the adder, the reader finds no entry it can decrypt and shows the
 contact as not sharing.
 
 Mutual sharing therefore needs each person to add the other. One-way sharing needs only one
-side to add. When a contact is added, the adder's device sends them one add-back request
-(section 4.5), so that they can add the adder back without a second invite. The request approves
+side to add. Once the adder shares with a new contact, the adder's device sends them one add-back
+request (section 4.5), so that they can add the adder back without a second invite. The request approves
 nothing and has no answer: whether an entry decrypts stays the only signal of sharing. Nothing is
 sent when a contact is removed.
 
@@ -137,7 +140,8 @@ with the user's public key, the time of sending as `created_at`, no tags, and th
 - `v` is `1`.
 - `invite` is the user's `nprofile` with up to four of the user's relays, as in section 4.1.
 - `name` is the name the user gave themselves on the device, at most 64 characters, and is
-  omitted when they gave none.
+  omitted when they gave none. The app asks for it once, at its first start, and the user may
+  skip the question; a request without a name shows its sender as unknown.
 
 The wrap's `created_at` is randomised up to two days into the past, as NIP-59 says, and its
 `expiration` is that `created_at` plus 30 days.

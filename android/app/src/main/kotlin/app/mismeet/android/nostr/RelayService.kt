@@ -28,7 +28,14 @@ class RelayService {
      * One relay as the setup checks found it: [problem] is null when it answered, and
      * [ownLocationAt] is the `created_at` of this phone's location event it holds.
      */
-    data class RelayCheck(val url: String, val problem: String? = null, val ownLocationAt: Long? = null)
+    data class RelayCheck(val url: String, val problem: Problem? = null, val ownLocationAt: Long? = null)
+
+    /** Why a relay could not be asked; [Failed] carries what the connection reported, in English. */
+    sealed interface Problem {
+        data object NotAnAddress : Problem
+        data object NoAnswer : Problem
+        data class Failed(val message: String) : Problem
+    }
 
     /** Connects to each relay on its own and asks it for [author]'s location event, all at once. */
     suspend fun check(relayUrls: List<String>, author: PublicKey): List<RelayCheck> = coroutineScope {
@@ -36,13 +43,13 @@ class RelayService {
     }
 
     private suspend fun check(text: String, author: PublicKey): RelayCheck {
-        val url = runCatching { RelayUrl.parse(text) }.getOrNull() ?: return RelayCheck(text, "Not a relay address")
+        val url = runCatching { RelayUrl.parse(text) }.getOrNull() ?: return RelayCheck(text, Problem.NotAnAddress)
         val client = ClientBuilder().connectTimeout(Duration.ofSeconds(ProtocolConstants.CONNECT_TIMEOUT_SECONDS)).build()
         try {
-            if (runCatching { client.addRelay(url, null, false, null) }.isFailure) return RelayCheck(text, "Not a relay address")
+            if (runCatching { client.addRelay(url, null, false, null) }.isFailure) return RelayCheck(text, Problem.NotAnAddress)
             val output = client.tryConnect(Duration.ofSeconds(ProtocolConstants.CONNECT_TIMEOUT_SECONDS))
             if (output.success.isEmpty()) {
-                return RelayCheck(text, output.failed.values.firstOrNull() ?: "No answer within ${ProtocolConstants.CONNECT_TIMEOUT_SECONDS} seconds")
+                return RelayCheck(text, output.failed.values.firstOrNull()?.let { Problem.Failed(it) } ?: Problem.NoAnswer)
             }
             val filter = Filter()
                 .kinds(listOf(Kind(ProtocolConstants.LOCATION_KIND)))
@@ -56,7 +63,7 @@ class RelayService {
             )
             return RelayCheck(text, ownLocationAt = events.maxOfOrNull { it.createdAt().asSecs().toLong() })
         } catch (e: Exception) {
-            return RelayCheck(text, e.message ?: e.toString())
+            return RelayCheck(text, Problem.Failed(e.message ?: e.toString()))
         } finally {
             client.shutdown()
         }

@@ -23,6 +23,15 @@ struct SetupChecksView: View {
 
     var body: some View {
         List {
+            if model.state.sharingEnabled {
+                Section("Sharing") {
+                    Button("Share now") { model.publishNow() }
+                        .disabled(model.isPublishing)
+                    if let at = model.state.lastPublishedAt {
+                        LabeledContent("Last shared with contacts", value: at.formatted(date: .abbreviated, time: .shortened))
+                    }
+                }
+            }
             Section("This phone") {
                 ForEach(SetupChecks.phone(model: model, servicesEnabled: servicesEnabled, openSettings: openSettings)) { row($0) }
             }
@@ -35,16 +44,26 @@ struct SetupChecksView: View {
             }
             Section("Contacts") {
                 if model.state.contacts.isEmpty {
-                    row(Check(title: "No contacts", outcome: .warning, detail: "Add someone from the invite they sent you."))
+                    row(Check(title: String(localized: "No contacts"), outcome: .warning, detail: String(localized: "Add someone from the invite they sent you.")))
                 }
-                ForEach(model.state.contacts.map(SetupChecks.contact)) { row($0) }
+                ForEach(model.state.contacts.map { SetupChecks.contact($0) }) { row($0) }
+            }
+            Section {
+                Toggle("Send problem reports", isOn: Binding(
+                    get: { model.state.reportsEnabled },
+                    set: { model.setReportsEnabled($0) }
+                ))
+            } header: {
+                Text("Problem reports")
+            } footer: {
+                Text("When a share fails or the app crashes, sends the developer an encrypted report, at most once a day, from a key made for that report alone. It holds the setup checks and the app's recent messages, never your location, contacts or keys. The button below shows a report before you send one.")
             }
             Section("App") {
-                row(Check(title: "Version", outcome: .info, detail: version))
+                row(Check(title: String(localized: "Version"), outcome: .info, detail: version))
                 if let sent {
                     row(sent
-                        ? Check(title: "Report", outcome: .ok, detail: "Sent to the developer")
-                        : Check(title: "Report", outcome: .problem, detail: "Not sent: no relay took it. Try again later."))
+                        ? Check(title: String(localized: "Report"), outcome: .ok, detail: String(localized: "Sent to the developer"))
+                        : Check(title: String(localized: "Report"), outcome: .problem, detail: String(localized: "Not sent: no relay took it. Try again later.")))
                 }
             }
         }
@@ -59,7 +78,7 @@ struct SetupChecksView: View {
                         preparing = false
                     }
                 } label: {
-                    Text(preparing ? "Preparing report..." : "Send report to the developer").frame(maxWidth: .infinity)
+                    Text(preparing ? LocalizedStringKey("Preparing report...") : "Send report to the developer").frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
                 .disabled(preparing)
@@ -147,7 +166,7 @@ struct SetupChecksView: View {
                                 dismiss()
                             }
                         } label: {
-                            Text(sending ? "Sending..." : "Send").frame(maxWidth: .infinity)
+                            Text(sending ? LocalizedStringKey("Sending...") : "Send").frame(maxWidth: .infinity)
                         }
                         .buttonStyle(.borderedProminent)
                     }

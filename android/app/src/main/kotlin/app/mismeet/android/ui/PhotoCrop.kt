@@ -33,11 +33,13 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import app.mismeet.android.R
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -86,9 +88,9 @@ fun PhotoCropDialog(bitmap: Bitmap, onDismiss: () -> Unit, onChoose: (Bitmap) ->
                 drawCircle(Color.White, radius = side / 2, style = Stroke(2.dp.toPx()))
             }
             Row(Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                TextButton(onClick = onDismiss) { Text("Cancel", color = Color.White) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel), color = Color.White) }
                 TextButton(onClick = { onChoose(crop(bitmap, side, cover * zoom, offset)) }, enabled = size != IntSize.Zero) {
-                    Text("Choose", color = Color.White)
+                    Text(stringResource(R.string.choose), color = Color.White)
                 }
             }
         }

@@ -65,11 +65,16 @@ follows it, and a protocol change edits the spec first, in the same change.
   permission. The "Share my location" switch on the Me screen turns it on. Keep every
   publishing path behind `sharingEnabled`.
 - Controls go at the bottom of the screen, where a thumb reaches them, or at least never in the
-  top bar: the map's framing button and the buttons of sheets and dialogs, such as Add contact
-  and the photo crop, sit at the bottom, and only titles stay at the top. The contact list is a
-  sheet over the map, as Find My's people are, with Refresh and Add in its header beside the
-  title; tapping a contact turns the sheet into that contact's card. Both apps have only the
-  Map and Me tabs. New controls follow the same rule.
+  top bar: the map's framing and follow buttons, in one pill at the bottom right as Find My's,
+  and the buttons of sheets and dialogs, such as Add contact and the photo crop, sit at the
+  bottom, and only titles stay at the top. The contact list is a sheet over the map, as Find
+  My's people are, with Add in its header beside the title; tapping a contact turns the sheet
+  into that contact's card. Both apps have only the Map and Me tabs, and Me fits one screen
+  without scrolling: what only a tester needs, such as Share now, the last share and problem
+  reports, goes under Check setup. New controls follow the same rule.
+- Both apps follow the phone's language: English, and Finnish from
+  `ios/Mismeet/Localizable.xcstrings` and `android/app/src/main/res/values-fi/strings.xml`. A new
+  string on screen gets its Finnish in the same commit. Problem reports stay in English.
 - Never log a secret key, a decrypted payload or a contact's public key above debug level.
 - Bundle identifier `app.mismeet.ios`, Android `applicationId` `app.mismeet.android`. Changing
   one means changing it here and in the project files in the same commit.

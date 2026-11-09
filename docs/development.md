@@ -284,19 +284,19 @@ which tells the Android phone whose events to fetch once it adds the iPhone back
    as answering.
 2. On the Android phone, open Me: its invite QR code is on screen. On the iPhone, tap + beside
    Contacts at the bottom of the map, then "Scan QR code", scan it, give the contact a name and
-   tap Add. Within a few seconds "Check setup" on the iPhone shows "Last share" a moment ago
-   and each relay holding that location.
-3. On the Android phone, the contact list at the bottom of the map shows "Someone added you"
-   within a minute, or at once with Refresh; with a name under "Your name" on the iPhone's Me
-   screen, it shows that name instead. Tap "Add back", name the contact, Add. Pulled up, the
-   contact list shows the district, "seen ..." and the distance after the next refresh, within
-   a minute, or at once with Refresh. Both apps open on the map, framed around
-   everyone with a known position in the phone's own country. After panning, the button at the
-   bottom frames that view again; with someone abroad, "Everyone" in that view widens it to
-   them too.
+   tap Add, then Share when the app asks whether to share your location with them. Within a few
+   seconds "Check setup" on the iPhone shows "Last shared with contacts" a moment ago and each
+   relay holding that location.
+3. On the Android phone, the contact list at the bottom of the map shows "Unknown added you"
+   within a minute; with a name under "Your name" on the iPhone's Me screen, it shows that name
+   instead. Tap "Add back", name the contact, Add, and answer the share question. Pulled up, the
+   contact list shows the district, "seen ..." and the distance within a minute. Both apps open
+   on the map, framed around everyone with a known position in the phone's own country. After
+   panning, the people button at the bottom right frames that view again; with someone abroad,
+   the same button in that view widens it to them too.
 4. Walk a few hundred metres with the iPhone, or drive. Significant location changes wake the
    app and the Android row's "Seen" time moves. Pulling the contact list down on the iPhone, once
-   it is pulled up over the map, refreshes its own view; the "Share now" button on its Me
-   screen forces a share.
+   it is pulled up over the map, refreshes its own view; "Share now" under Me > Check setup
+   forces a share.
 5. To check revocation, switch "Share my location" off for the contact on the iPhone: the next
    refresh on the Android phone shows "no longer sharing", with the last position kept.

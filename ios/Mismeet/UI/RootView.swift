@@ -25,6 +25,8 @@ struct RootView: View {
         TabView(selection: $screen) {
             Tab("Map", systemImage: "map", value: .map) {
                 ContactsMapView(focused: $focused, panel: $panel)
+                    // The panel runs on under the tab bar, as Find My's sheet does.
+                    .toolbarBackground(.hidden, for: .tabBar)
             }
             Tab("Me", systemImage: "person.crop.circle", value: .me) {
                 MeView()

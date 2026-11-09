@@ -1,0 +1,1206 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ added you": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ lisäsi sinut"
+          }
+        }
+      }
+    },
+    "%@ sees where you are until you turn it off in their card.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ näkee sijaintisi, kunnes laitat jakamisen pois hänen kortistaan."
+          }
+        }
+      }
+    },
+    "%@, no longer sharing": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, ei enää jaa"
+          }
+        }
+      }
+    },
+    "%@, seen %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, nähty %2$@"
+          }
+        }
+      }
+    },
+    "%@, within %lld m": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, tarkkuus %2$lld m"
+          }
+        }
+      }
+    },
+    "%@. An iPhone shares when it has moved about 500 m and when Mismeet opens.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@. iPhone jakaa, kun se on liikkunut noin 500 m ja kun Mismeet avataan."
+          }
+        }
+      }
+    },
+    "%lld contacts": {
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld contact"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld contacts"
+                }
+              }
+            }
+          }
+        },
+        "fi": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld yhteystiedolle"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld yhteystiedolle"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Add": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisää"
+          }
+        }
+      }
+    },
+    "Add a contact from the invite they sent you.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisää yhteystieto kutsusta, jonka hän lähetti sinulle."
+          }
+        }
+      }
+    },
+    "Add back": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisää takaisin"
+          }
+        }
+      }
+    },
+    "Add contact": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisää yhteystieto"
+          }
+        }
+      }
+    },
+    "Add me on Mismeet": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisää minut Mismeetissä"
+          }
+        }
+      }
+    },
+    "Add someone from the invite they sent you.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisää joku hänen lähettämästään kutsusta."
+          }
+        }
+      }
+    },
+    "Add them back to see each other. Sent %@.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lisää hänet takaisin, niin näette toistenne sijainnit. Lähetetty %@."
+          }
+        }
+      }
+    },
+    "Allow location": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salli sijainti"
+          }
+        }
+      }
+    },
+    "Always": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aina"
+          }
+        }
+      }
+    },
+    "Answers": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vastaa"
+          }
+        }
+      }
+    },
+    "Answers, but holds no location of yours": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vastaa, mutta sijaintiasi ei ole tallessa"
+          }
+        }
+      }
+    },
+    "App": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appi"
+          }
+        }
+      }
+    },
+    "Asking each relay": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kysytään jokaiselta releeltä"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kumoa"
+          }
+        }
+      }
+    },
+    "Cannot share with more than %lld contacts": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jakaa voi enintään %lld yhteystiedolle"
+          }
+        }
+      }
+    },
+    "Check setup": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarkista asetukset"
+          }
+        }
+      }
+    },
+    "Choose": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valitse"
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sulje"
+          }
+        }
+      }
+    },
+    "Contacts": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yhteystiedot"
+          }
+        }
+      }
+    },
+    "Copy link": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopioi linkki"
+          }
+        }
+      }
+    },
+    "Could not save that picture": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvaa ei voitu tallentaa"
+          }
+        }
+      }
+    },
+    "Could not use that picture": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kuvaa ei voitu käyttää"
+          }
+        }
+      }
+    },
+    "Denied": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estetty"
+          }
+        }
+      }
+    },
+    "Denied. Choose Always.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estetty. Valitse Aina."
+          }
+        }
+      }
+    },
+    "Directions": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reittiohjeet"
+          }
+        }
+      }
+    },
+    "Dismiss": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohita"
+          }
+        }
+      }
+    },
+    "Everyone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kaikki"
+          }
+        }
+      }
+    },
+    "Failed %@: %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Epäonnistui %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Give the contact a name.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anna yhteystiedolle nimi."
+          }
+        }
+      }
+    },
+    "Has not added you, or does not share with you": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei ole lisännyt sinua tai ei jaa sinulle"
+          }
+        }
+      }
+    },
+    "Holds an older location of yours, shared %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallessa vanhempi sijaintisi, jaettu %@"
+          }
+        }
+      }
+    },
+    "Holds your location shared %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallessa sijaintisi, jaettu %@"
+          }
+        }
+      }
+    },
+    "Home": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Koti"
+          }
+        }
+      }
+    },
+    "How you call them": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Millä nimellä kutsut häntä"
+          }
+        }
+      }
+    },
+    "Invite": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kutsu"
+          }
+        }
+      }
+    },
+    "Invite link": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kutsulinkki"
+          }
+        }
+      }
+    },
+    "It goes encrypted to the developer, from a key made for this one report. It holds no location, contact names or keys.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se menee salattuna kehittäjälle, vain tätä raporttia varten tehdyllä avaimella. Siinä ei ole sijaintia, yhteystietojen nimiä eikä avaimia."
+          }
+        }
+      }
+    },
+    "Keep north up": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pidä pohjoinen ylhäällä"
+          }
+        }
+      }
+    },
+    "Last position": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viimeisin sijainti"
+          }
+        }
+      }
+    },
+    "Last share": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Viimeisin jako"
+          }
+        }
+      }
+    },
+    "Last shared with contacts": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaettu viimeksi"
+          }
+        }
+      }
+    },
+    "Location Services": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sijaintipalvelut"
+          }
+        }
+      }
+    },
+    "Location permission": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sijaintilupa"
+          }
+        }
+      }
+    },
+    "Location permission is needed to share your location": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sijainnin jakaminen tarvitsee sijaintiluvan"
+          }
+        }
+      }
+    },
+    "Low Power Mode": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Virransäästötila"
+          }
+        }
+      }
+    },
+    "Map": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kartta"
+          }
+        }
+      }
+    },
+    "Me": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Minä"
+          }
+        }
+      }
+    },
+    "My location": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oma sijainti"
+          }
+        }
+      }
+    },
+    "Name": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nimi"
+          }
+        }
+      }
+    },
+    "No contacts": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei yhteystietoja"
+          }
+        }
+      }
+    },
+    "No location found on their relays yet": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hänen releiltään ei ole vielä löytynyt sijaintia"
+          }
+        }
+      }
+    },
+    "No location yet": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei sijaintia vielä"
+          }
+        }
+      }
+    },
+    "Nobody: add a contact, or turn sharing on in a contact's card.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei kenellekään: lisää yhteystieto tai laita jakaminen päälle yhteystiedon kortista."
+          }
+        }
+      }
+    },
+    "Not asked yet": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei kysytty vielä"
+          }
+        }
+      }
+    },
+    "Not asked yet.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei kysytty vielä."
+          }
+        }
+      }
+    },
+    "Not now": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei nyt"
+          }
+        }
+      }
+    },
+    "Not sent: no relay took it. Try again later.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei lähetetty: mikään relee ei ottanut sitä vastaan. Yritä myöhemmin uudelleen."
+          }
+        }
+      }
+    },
+    "Not sharing with you": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei jaa sinulle"
+          }
+        }
+      }
+    },
+    "Not yet": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei vielä"
+          }
+        }
+      }
+    },
+    "Off for the whole phone, under Settings > Privacy & Security > Location Services.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pois koko puhelimesta, kohdassa Asetukset > Tietosuoja ja suojaus > Sijaintipalvelut."
+          }
+        }
+      }
+    },
+    "Off: contacts see a point that can be kilometres away.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pois: yhteystiedot näkevät pisteen, joka voi olla kilometrien päässä."
+          }
+        }
+      }
+    },
+    "Off: this phone only watches its contacts and needs no location permission.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pois: tämä puhelin vain seuraa yhteystietojaan eikä tarvitse sijaintilupaa."
+          }
+        }
+      }
+    },
+    "Off: this phone only watches its contacts and shares nothing.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pois: tämä puhelin vain seuraa yhteystietojaan eikä jaa mitään."
+          }
+        }
+      }
+    },
+    "On": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Päällä"
+          }
+        }
+      }
+    },
+    "On: iOS cuts background work, which can delay sharing.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Päällä: iOS rajoittaa taustatyötä, mikä voi viivästyttää jakamista."
+          }
+        }
+      }
+    },
+    "Open Settings": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avaa Asetukset"
+          }
+        }
+      }
+    },
+    "Paste": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sijoita"
+          }
+        }
+      }
+    },
+    "Permission": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lupa"
+          }
+        }
+      }
+    },
+    "Precise location": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarkka sijainti"
+          }
+        }
+      }
+    },
+    "Preparing report...": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valmistellaan raporttia..."
+          }
+        }
+      }
+    },
+    "Problem reports": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ongelmaraportit"
+          }
+        }
+      }
+    },
+    "Relays": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Releet"
+          }
+        }
+      }
+    },
+    "Remove photo": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poista kuva"
+          }
+        }
+      }
+    },
+    "Report": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raportti"
+          }
+        }
+      }
+    },
+    "Restricted": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rajoitettu"
+          }
+        }
+      }
+    },
+    "Run checks again": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tarkista uudelleen"
+          }
+        }
+      }
+    },
+    "Save": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tallenna"
+          }
+        }
+      }
+    },
+    "Scan QR code": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skannaa QR-koodi"
+          }
+        }
+      }
+    },
+    "Scan the invite": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Skannaa kutsu"
+          }
+        }
+      }
+    },
+    "Seen %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nähty %@"
+          }
+        }
+      }
+    },
+    "Send": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lähetä"
+          }
+        }
+      }
+    },
+    "Send problem reports": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lähetä ongelmaraportit"
+          }
+        }
+      }
+    },
+    "Send report to the developer": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lähetä raportti kehittäjälle"
+          }
+        }
+      }
+    },
+    "Send the link, or let them scan the code.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lähetä linkki tai anna hänen skannata koodi."
+          }
+        }
+      }
+    },
+    "Send this report?": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lähetetäänkö tämä raportti?"
+          }
+        }
+      }
+    },
+    "Sending...": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lähetetään..."
+          }
+        }
+      }
+    },
+    "Sent to the developer": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lähetetty kehittäjälle"
+          }
+        }
+      }
+    },
+    "Share": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaa"
+          }
+        }
+      }
+    },
+    "Share invite": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaa kutsu"
+          }
+        }
+      }
+    },
+    "Share my location": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaa sijaintini"
+          }
+        }
+      }
+    },
+    "Share now": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaa nyt"
+          }
+        }
+      }
+    },
+    "Share your location with %@?": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaetaanko sijaintisi henkilölle %@?"
+          }
+        }
+      }
+    },
+    "Shares with you. %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jakaa sinulle. %@"
+          }
+        }
+      }
+    },
+    "Sharing": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jakaminen"
+          }
+        }
+      }
+    },
+    "Sharing from this phone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jakaminen tästä puhelimesta"
+          }
+        }
+      }
+    },
+    "Sharing with": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaetaan"
+          }
+        }
+      }
+    },
+    "Shown to the people you add, so they know who asks to be added back. You can leave it empty.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Näytetään lisäämillesi ihmisille, jotta he tietävät, kuka pyytää lisäämään takaisin. Voit jättää sen tyhjäksi."
+          }
+        }
+      }
+    },
+    "Skip": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ohita"
+          }
+        }
+      }
+    },
+    "That contact is already in the list.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Yhteystieto on jo listalla."
+          }
+        }
+      }
+    },
+    "That is your own invite.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tämä on oma kutsusi."
+          }
+        }
+      }
+    },
+    "This phone": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tämä puhelin"
+          }
+        }
+      }
+    },
+    "Turn on": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laita päälle"
+          }
+        }
+      }
+    },
+    "Turn with heading": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Käännä kulkusuunnan mukaan"
+          }
+        }
+      }
+    },
+    "Unknown": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tuntematon"
+          }
+        }
+      }
+    },
+    "Unreachable: %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ei tavoitettavissa: %@"
+          }
+        }
+      }
+    },
+    "Version": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versio"
+          }
+        }
+      }
+    },
+    "When a share fails or the app crashes, sends the developer an encrypted report, at most once a day, from a key made for that report alone. It holds the setup checks and the app's recent messages, never your location, contacts or keys. The button below shows a report before you send one.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kun jakaminen epäonnistuu tai appi kaatuu, lähettää kehittäjälle salatun raportin enintään kerran päivässä, vain sitä raporttia varten tehdyllä avaimella. Siinä on asetusten tarkistukset ja apin viimeisimmät viestit, ei koskaan sijaintiasi, yhteystietojasi tai avaimiasi. Alla oleva painike näyttää raportin ennen kuin lähetät sen."
+          }
+        }
+      }
+    },
+    "While using the app": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kun appia käytetään"
+          }
+        }
+      }
+    },
+    "While using the app: sharing stops once Mismeet is in the background. Choose Always.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kun appia käytetään: jakaminen loppuu, kun Mismeet on taustalla. Valitse Aina."
+          }
+        }
+      }
+    },
+    "Your name": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nimesi"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

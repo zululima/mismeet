@@ -5,9 +5,19 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Add a relay probe that shows what each relay does with our events
+## Ask before sharing with a new contact and follow Find My's layout
 
 2026-11-09, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**1.** Quoted under [8c23d99](https://github.com/zululima/mismeet/commit/8c23d99ec50533a8dfae559472935ecb341b6159).
+
+**2.** Quoted under [8c23d99](https://github.com/zululima/mismeet/commit/8c23d99ec50533a8dfae559472935ecb341b6159).
+
+**3.** Quoted under [8c23d99](https://github.com/zululima/mismeet/commit/8c23d99ec50533a8dfae559472935ecb341b6159).
+
+## Add a relay probe that shows what each relay does with our events
+
+2026-11-09, commit [8c23d99](https://github.com/zululima/mismeet/commit/8c23d99ec50533a8dfae559472935ecb341b6159), model claude-opus-5-5, effort xhigh.
 
 **1.**
 > mismeet video in downloads. the app should ask for location sharing

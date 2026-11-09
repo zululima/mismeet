@@ -1,4 +1,206 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Mismeet</string>
+    <string name="app_name" translatable="false">Mismeet</string>
+
+    <!-- Shared words -->
+    <string name="add">Add</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="dismiss">Dismiss</string>
+    <string name="save">Save</string>
+    <string name="skip">Skip</string>
+    <string name="share">Share</string>
+    <string name="not_now">Not now</string>
+    <string name="unknown">Unknown</string>
+    <string name="just_now">just now</string>
+    <string name="share_my_location">Share my location</string>
+    <string name="check_setup">Check setup</string>
+    <string name="contacts">Contacts</string>
+
+    <!-- Tabs -->
+    <string name="tab_map">Map</string>
+    <string name="tab_me">Me</string>
+
+    <!-- Contact list -->
+    <string name="contacts_empty">Add a contact from the invite they sent you.</string>
+    <string name="photo_title">Photo of %1$s</string>
+    <string name="photo_text">The photo stays on this phone and shows on the map in place of the initial.</string>
+    <string name="photo_choose_another">Choose another</string>
+    <string name="photo_remove">Remove photo</string>
+    <string name="request_added_you">%1$s added you</string>
+    <string name="request_text">Add them back to see each other. Sent %1$s.</string>
+    <string name="add_back">Add back</string>
+    <string name="open_in_map">Open in map</string>
+    <string name="photo">Photo</string>
+    <string name="remove">Remove</string>
+    <string name="status_place_seen">%1$s, seen %2$s</string>
+    <string name="status_seen">Seen %1$s</string>
+    <string name="status_place_seen_stopped">%1$s, seen %2$s, no longer sharing</string>
+    <string name="status_seen_stopped">Seen %1$s, no longer sharing</string>
+    <string name="status_not_sharing">Not sharing with you</string>
+    <string name="status_no_location">No location yet</string>
+    <string name="moving_on_foot">on foot at %1$s</string>
+    <string name="moving_by_bike">by bike at %1$s</string>
+    <string name="moving_by_car">by car at %1$s</string>
+    <string name="add_contact">Add contact</string>
+    <string name="name">Name</string>
+    <string name="name_placeholder">How you call them</string>
+    <string name="invite">Invite</string>
+    <string name="invite_link">Invite link</string>
+    <string name="invite_not_valid">Not a valid invite</string>
+    <string name="paste">Paste</string>
+    <string name="scan_qr_code">Scan QR code</string>
+    <string name="scan_prompt">Scan the invite</string>
+    <string name="share_question_title">Share your location with %1$s?</string>
+    <string name="share_question_text">%1$s sees where you are until you turn it off in their card.</string>
+    <string name="name_question_title">Your name</string>
+    <string name="name_question_text">Shown to the people you add, so they know who asks to be added back. You can leave it empty.</string>
+
+    <!-- Map -->
+    <string name="directions">Directions</string>
+    <string name="everyone">Everyone</string>
+    <string name="home">Home</string>
+    <string name="you">You</string>
+    <string name="my_location">My location</string>
+    <string name="estimated_title">%1$s, estimated</string>
+    <string name="estimated_snippet">Guessed along the road from the last fix</string>
+    <string name="estimated_snippet_moving">Guessed along the road from the last fix, %1$s</string>
+
+    <!-- Me -->
+    <string name="invite_qr_code">Invite QR code</string>
+    <string name="share_invite">Share invite</string>
+    <string name="share_invite_text">Add me on Mismeet: %1$s</string>
+    <string name="copy_invite_link">Copy invite link</string>
+    <string name="invite_clip_label">Mismeet invite</string>
+    <string name="invite_footer">Send the link, or let them scan the code.</string>
+    <string name="your_name">Your name</string>
+    <string name="sharing_from_this_phone">Sharing from this phone</string>
+    <string name="sharing_off_footer">Off: this phone only watches its contacts and needs no location permission.</string>
+    <string name="allow_location">Allow location</string>
+    <string name="allow_location_always">Allow location all the time</string>
+    <string name="allow_notifications">Allow notifications</string>
+    <string name="allow_battery">Allow unrestricted battery use</string>
+    <string name="disclosure_title">Sharing your location</string>
+    <string name="disclosure_text">Mismeet collects location data to share your position with the contacts you choose, even when the app is closed or not in use. Each position is encrypted for those contacts alone, sent to public Nostr relays and expires after 24 hours. It is never used for ads.</string>
+    <string name="continue_button">Continue</string>
+
+    <!-- Check setup -->
+    <string name="sharing">Sharing</string>
+    <string name="share_now">Share now</string>
+    <string name="last_shared">Last shared with contacts %1$s</string>
+    <string name="problem_reports">Problem reports</string>
+    <string name="send_problem_reports">Send problem reports</string>
+    <string name="reports_footer">When a share fails or the app crashes, sends the developer an encrypted report, at most once a day, from a key made for that report alone. It holds the setup checks and the app\'s recent messages, never your location, contacts or keys. The button below shows a report before you send one.</string>
+    <string name="this_phone">This phone</string>
+    <string name="relays">Relays</string>
+    <string name="asking_relays">Asking each relay...</string>
+    <string name="no_contacts">No contacts</string>
+    <string name="no_contacts_detail">Add someone from the invite they sent you.</string>
+    <string name="app">App</string>
+    <string name="version">Version</string>
+    <string name="version_detail" translatable="false">Mismeet %1$s (%2$d), Android %3$s</string>
+    <string name="report">Report</string>
+    <string name="report_sent">Sent to the developer</string>
+    <string name="report_not_sent">Not sent: no relay took it. Try again later.</string>
+    <string name="report_question">Send this report?</string>
+    <string name="report_question_text">It goes encrypted to the developer, from a key made for this one report. It holds no location, contact names or keys.</string>
+    <string name="sending">Sending...</string>
+    <string name="send">Send</string>
+    <string name="preparing_report">Preparing report...</string>
+    <string name="send_report">Send report to the developer</string>
+    <string name="done">Done</string>
+    <string name="run_checks_again">Run checks again</string>
+    <string name="outcome_ok">OK</string>
+    <string name="outcome_warning">Warning</string>
+    <string name="outcome_problem">Problem</string>
+    <string name="outcome_info">Info</string>
+
+    <!-- Setup checks -->
+    <string name="check_sharing_off">Off: this phone only watches its contacts and shares nothing.</string>
+    <string name="check_turn_on">Turn on</string>
+    <string name="check_on">On</string>
+    <string name="check_location">Location</string>
+    <string name="check_location_off">Off for the whole phone.</string>
+    <string name="check_open_settings">Open settings</string>
+    <string name="check_gps" translatable="false">GPS</string>
+    <string name="check_gps_network">Off: positions come from the network and can be hundreds of metres off.</string>
+    <string name="check_gps_none">Off, and so is network location: Mismeet needs one of them.</string>
+    <string name="check_network_location">Network location</string>
+    <string name="check_network_on">On: used where GPS finds nothing, such as indoors</string>
+    <string name="check_network_off">Off: where GPS finds nothing, such as indoors, a share can fail.</string>
+    <string name="check_network_none">None on this phone: where GPS finds nothing, such as indoors, a share can fail.</string>
+    <string name="check_location_permission">Location permission</string>
+    <string name="check_precise">Precise</string>
+    <string name="check_approximate">Approximate: contacts see a point that can be kilometres away.</string>
+    <string name="check_not_allowed">Not allowed. Allow it on the Me screen.</string>
+    <string name="check_back_to_me">Back to Me</string>
+    <string name="check_background">In the background</string>
+    <string name="check_background_ok">Allowed all the time</string>
+    <string name="check_background_problem">Only while the app is open: sharing stops once Mismeet is in the background.</string>
+    <string name="check_service">Sharing service</string>
+    <plurals name="check_service_running">
+        <item quantity="one">Running, shares every %d minute</item>
+        <item quantity="other">Running, shares every %d minutes</item>
+    </plurals>
+    <string name="check_service_not_running">Not running.</string>
+    <string name="check_start_it">Start it</string>
+    <string name="check_notifications">Notifications</string>
+    <string name="check_notifications_off">Off: the notification that sharing is on stays hidden.</string>
+    <string name="check_battery">Battery</string>
+    <string name="check_battery_optimized">Optimized: Android can stop sharing in the background.</string>
+    <string name="check_allow_unrestricted">Allow unrestricted</string>
+    <string name="check_battery_saver">Battery Saver</string>
+    <string name="check_battery_saver_on">On: Android cuts background work, which can delay sharing.</string>
+    <string name="check_data_saver">Data Saver</string>
+    <string name="check_data_saver_on">On, and Mismeet is not exempt: Android can cut its network in the background.</string>
+    <string name="check_sharing_with">Sharing with</string>
+    <string name="check_sharing_with_nobody">Nobody: add a contact, or turn sharing on in a contact\'s card.</string>
+    <plurals name="check_sharing_with_count">
+        <item quantity="one">%d contact</item>
+        <item quantity="other">%d contacts</item>
+    </plurals>
+    <string name="check_last_share">Last share</string>
+    <string name="check_last_share_failed">Failed %1$s: %2$s</string>
+    <string name="check_not_yet">Not yet</string>
+    <string name="check_last_position">Last position</string>
+    <string name="check_last_position_detail">%1$s, within %2$s</string>
+    <string name="check_relay_unreachable">Unreachable: %1$s</string>
+    <string name="check_relay_not_an_address">Not a relay address</string>
+    <plurals name="check_relay_no_answer">
+        <item quantity="one">No answer within %d second</item>
+        <item quantity="other">No answer within %d seconds</item>
+    </plurals>
+    <string name="check_relay_answers">Answers</string>
+    <string name="check_relay_answers_empty">Answers, but holds no location of yours</string>
+    <string name="check_relay_older">Holds an older location of yours, shared %1$s</string>
+    <string name="check_relay_current">Holds your location shared %1$s</string>
+    <string name="check_contact_shares">Shares with you. %1$s</string>
+    <string name="check_contact_not_sharing">Has not added you, or does not share with you</string>
+    <string name="check_contact_unknown">No location found on their relays yet</string>
+
+    <!-- Model messages -->
+    <string name="error_own_invite">That is your own invite.</string>
+    <string name="error_duplicate">That contact is already in the list.</string>
+    <string name="error_no_name">Give the contact a name.</string>
+    <string name="notice_location_needed">Location permission is needed to share your location</string>
+    <string name="notice_picture">Could not use that picture</string>
+    <plurals name="notice_max_sharing">
+        <item quantity="one">Cannot share with more than %d contact</item>
+        <item quantity="other">Cannot share with more than %d contacts</item>
+    </plurals>
+    <string name="failure_no_position">Could not get a position</string>
+    <string name="failure_old_position">The newest position was over an hour old</string>
+    <string name="failure_not_accepted">No relay accepted it: %1$s</string>
+    <string name="failure_not_built">Could not build the event</string>
+
+    <!-- Sharing notification -->
+    <string name="notification_channel">Location sharing</string>
+    <string name="notification_title">Mismeet is sharing your location</string>
+    <plurals name="notification_text">
+        <item quantity="one">Every %d minute, with your contacts only</item>
+        <item quantity="other">Every %d minutes, with your contacts only</item>
+    </plurals>
+
+    <!-- Photo crop -->
+    <string name="choose">Choose</string>
 </resources>

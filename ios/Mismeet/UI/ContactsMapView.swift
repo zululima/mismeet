@@ -3,9 +3,10 @@ import SwiftUI
 
 /// Opens framed around the people in this phone's country, the user included, like Find My, again
 /// each time the app comes back, and follows them as they move until the map is moved by hand. The
-/// button at the bottom returns there, and a second tap widens to everyone, abroad included. The
-/// contact list is a panel at the bottom, and a contact tapped in it or on the map is focused, with
-/// its card in the panel until it is closed.
+/// people button in the controls at the bottom returns there, and a second tap widens to everyone,
+/// abroad included; the arrow below it follows this phone, and a second tap turns the map with
+/// its heading, as in Find My. The contact list is a panel at the bottom, and a contact tapped in it
+/// or on the map is focused, with its card in the panel until it is closed.
 struct ContactsMapView: View {
     private struct Estimate {
         var path: [CLLocationCoordinate2D]
@@ -24,6 +25,7 @@ struct ContactsMapView: View {
     @State private var estimates: [String: Estimate] = [:]
     @State private var countries: Countries?
     @State private var wasInBackground = false
+    @State private var panelHeight: CGFloat = 0
     @Binding var focused: String?
     @Binding var panel: PanelHeight
 
@@ -63,52 +65,69 @@ struct ContactsMapView: View {
 
     var body: some View {
         let widen = focusedContact == nil && someoneAbroad && framing == .nearby && !position.positionedByUser
-        Map(position: $position, scope: mapScope) {
-            UserAnnotation()
-            if let payload = focusedContact?.lastPayload {
-                MapCircle(center: CLLocationCoordinate2D(latitude: payload.latitude, longitude: payload.longitude),
-                          radius: CLLocationDistance(payload.accuracy))
-                    .foregroundStyle(.blue.opacity(0.25))
-                    .stroke(.white, lineWidth: 3)
-            }
-            ForEach(located) { contact in
-                if let estimate = estimates[contact.id] {
-                    MapPolyline(coordinates: estimate.path)
-                        .stroke(Color.purple.opacity(0.8), style: StrokeStyle(lineWidth: 4, lineCap: .round, dash: [8, 6]))
-                    Annotation("\(contact.name), estimated", coordinate: estimate.point) {
-                        ContactAvatar(contact: contact, size: 36).opacity(0.45).environment(model)
-                            .onTapGesture { focused = contact.id }
+        ZStack(alignment: .bottom) {
+            Map(position: $position, scope: mapScope) {
+                UserAnnotation()
+                if let payload = focusedContact?.lastPayload {
+                    MapCircle(center: CLLocationCoordinate2D(latitude: payload.latitude, longitude: payload.longitude),
+                              radius: CLLocationDistance(payload.accuracy))
+                        .foregroundStyle(.blue.opacity(0.25))
+                        .stroke(.white, lineWidth: 3)
+                }
+                ForEach(located) { contact in
+                    if let estimate = estimates[contact.id] {
+                        MapPolyline(coordinates: estimate.path)
+                            .stroke(Color.purple.opacity(0.8), style: StrokeStyle(lineWidth: 4, lineCap: .round, dash: [8, 6]))
+                        Annotation("\(contact.name), estimated", coordinate: estimate.point) {
+                            ContactAvatar(contact: contact, size: 36).opacity(0.45).environment(model)
+                                .onTapGesture { focused = contact.id }
+                        }
+                    }
+                    if let payload = contact.lastPayload {
+                        Annotation(contact.name, coordinate: CLLocationCoordinate2D(latitude: payload.latitude, longitude: payload.longitude)) {
+                            ContactAvatar(contact: contact, size: contact.id == focused ? 56 : 44)
+                                .saturation(contact.sharing == .notSharing ? 0 : 1)
+                                .environment(model)
+                                .onTapGesture { focused = contact.id }
+                        }
                     }
                 }
-                if let payload = contact.lastPayload {
-                    Annotation(contact.name, coordinate: CLLocationCoordinate2D(latitude: payload.latitude, longitude: payload.longitude)) {
-                        ContactAvatar(contact: contact, size: contact.id == focused ? 56 : 44)
-                            .saturation(contact.sharing == .notSharing ? 0 : 1)
-                            .environment(model)
-                            .onTapGesture { focused = contact.id }
+            }
+            .mapControls {}
+            .overlay(alignment: .bottomTrailing) {
+                VStack(spacing: 10) {
+                    MapCompass(scope: mapScope)
+                    VStack(spacing: 0) {
+                        Button {
+                            focused = nil
+                            show(widen ? .everyone : .nearby)
+                        } label: {
+                            Label(
+                                someoneAbroad && !widen ? countryName : String(localized: "Everyone"),
+                                systemImage: widen ? "globe.europe.africa.fill" : "person.2.fill"
+                            )
+                            .frame(width: 44, height: 44)
+                        }
+                        Divider().frame(width: 44)
+                        Button {
+                            followMe()
+                        } label: {
+                            Label(followLabel, systemImage: followSymbol)
+                                .frame(width: 44, height: 44)
+                        }
+                        .disabled(model.authorization != .authorizedAlways && model.authorization != .authorizedWhenInUse)
                     }
+                    .labelStyle(.iconOnly)
+                    .font(.system(size: 17, weight: .medium))
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+                    .shadow(color: .black.opacity(0.15), radius: 6)
                 }
+                .padding(.trailing, 10)
+                .padding(.bottom, 12)
             }
-        }
-        .mapControls {}
-        .overlay(alignment: .bottomTrailing) {
-            VStack(alignment: .trailing, spacing: 12) {
-                MapCompass(scope: mapScope)
-                MapUserLocationButton(scope: mapScope)
-                Button {
-                    focused = nil
-                    show(widen ? .everyone : .nearby)
-                } label: {
-                    Label(
-                        someoneAbroad && !widen ? countryName : "Everyone",
-                        systemImage: widen || !someoneAbroad ? "person.2.fill" : "house.fill"
-                    )
-                }
-                .buttonStyle(.borderedProminent)
-            }
-            .padding()
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+            // Margins, not a smaller frame: a resized map leaves the strip it grows into black
+            // until its tiles load, which showed through the panel while it moved.
+            .safeAreaPadding(.bottom, panelHeight)
             Group {
                 if let contact = focusedContact {
                     ContactCard(contact: contact) {
@@ -125,17 +144,18 @@ struct ContactsMapView: View {
                     .shadow(color: .black.opacity(0.15), radius: 8)
                     .ignoresSafeArea(edges: .bottom)
             }
+            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { panelHeight = $0 }
         }
         .mapScope(mapScope)
         .task {
             countries = await Task.detached { Countries.bundled() }.value
         }
         .onChange(of: frameKey, initial: true) { _, _ in
-            if focusedContact == nil { show(.nearby) }
+            if focusedContact == nil, !position.followsUserLocation { show(.nearby) }
         }
         // Positions stored at launch are replaced by the first fetch a moment later.
         .onChange(of: positionKey) { _, _ in
-            if focusedContact == nil, !position.positionedByUser { show(framing) }
+            if focusedContact == nil, !position.positionedByUser, !position.followsUserLocation { show(framing) }
         }
         .onChange(of: focusKey, initial: true) { _, _ in
             frameFocused()
@@ -164,7 +184,31 @@ struct ContactsMapView: View {
     }
 
     private var countryName: String {
-        home.flatMap { Locale.current.localizedString(forRegionCode: $0) } ?? "Home"
+        home.flatMap { Locale.current.localizedString(forRegionCode: $0) } ?? String(localized: "Home")
+    }
+
+    private var followsHeading: Bool {
+        position.followsUserHeading
+    }
+
+    private var followLabel: String {
+        if followsHeading { return String(localized: "Keep north up") }
+        return position.followsUserLocation ? String(localized: "Turn with heading") : String(localized: "My location")
+    }
+
+    private var followSymbol: String {
+        if followsHeading { return "location.north.line.fill" }
+        return position.followsUserLocation ? "location.fill" : "location"
+    }
+
+    /// The first tap follows this phone, the next turns the map with its heading, the next only follows.
+    private func followMe() {
+        focused = nil
+        withAnimation {
+            position = position.followsUserLocation && !position.followsUserHeading
+                ? .userLocation(followsHeading: true, fallback: position)
+                : .userLocation(fallback: position)
+        }
     }
 
     private static func latLon(_ payload: LocationPayload) -> LatLon {

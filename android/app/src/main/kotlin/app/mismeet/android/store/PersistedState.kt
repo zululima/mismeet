@@ -51,6 +51,8 @@ data class PersistedState(
     val lastShareFailure: ShareFailure? = null,
     /** The name sent with add-back requests, spec section 4.5; empty sends none. */
     val ownName: String = "",
+    /** The name was asked for once, at the first launch or the first after the question existed. */
+    val askedName: Boolean = false,
     val requests: List<StoredRequest> = emptyList(),
     /** Senders whose add-back requests the user dismissed, as hex public keys. */
     val dismissedRequests: List<String> = emptyList(),
@@ -65,7 +67,16 @@ data class PersistedState(
 }
 
 @Serializable
-data class ShareFailure(val at: Long, val reason: String)
+data class ShareFailure(
+    val at: Long,
+    /** In English, for problem reports and for versions that predate [kind]. */
+    val reason: String,
+    val kind: Kind? = null,
+    /** What the relays answered, for [Kind.NOT_ACCEPTED]. */
+    val detail: String? = null,
+) {
+    enum class Kind { NO_POSITION, OLD_POSITION, NOT_ACCEPTED, NOT_BUILT }
+}
 
 /** An add-back request waiting for the user, by the sender's hex public key. */
 @Serializable

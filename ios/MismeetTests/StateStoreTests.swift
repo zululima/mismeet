@@ -44,6 +44,7 @@ final class StateStoreTests: XCTestCase {
         XCTAssertNil(contact.photoSetAt)
         XCTAssertEqual(state.relays, PersistedState.defaultRelays)
         XCTAssertFalse(state.sharingEnabled)
+        XCTAssertFalse(state.askedName)
     }
 
     func testMovesAnUndecodableFileAsideBeforeStartingEmpty() throws {

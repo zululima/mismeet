@@ -20,6 +20,8 @@ final class AppModel {
     var notice: String?
     /// An invite link the app was opened with, until the Add contact sheet takes it.
     var openedInvite: String?
+    /// A contact just added, whom the app asks whether to share this phone's location with.
+    private(set) var shareQuestion: Contact?
     private(set) var authorization: CLAuthorizationStatus
     /// False when the user gave Mismeet only an approximate location.
     private(set) var preciseLocation: Bool
@@ -84,12 +86,19 @@ final class AppModel {
             Task { await publishRelayList() }
         }
         #if DEBUG
-        // Test hook: `SIMCTL_CHILD_MISMEET_TEST_INVITES="uri;name|uri" xcrun simctl launch ...` adds contacts.
+        // Test hook: `SIMCTL_CHILD_MISMEET_TEST_INVITES="uri;name|uri" xcrun simctl launch ...` adds contacts
+        // and shares with them without asking.
         if let invites = ProcessInfo.processInfo.environment["MISMEET_TEST_INVITES"] {
             for (index, entry) in invites.split(separator: ";").enumerated() {
                 let parts = entry.split(separator: "|", maxSplits: 1)
                 let name = parts.count == 2 ? String(parts[0]) : "Test \(index + 1)"
                 try? addContact(invite: String(parts[parts.count - 1]), name: name)
+                if let id = shareQuestion?.id, let index = state.contacts.firstIndex(where: { $0.id == id }) {
+                    shareQuestion = nil
+                    state.contacts[index].share = true
+                    save()
+                    if state.sharingEnabled { recipientsChanged() }
+                }
             }
         }
         #endif
@@ -111,14 +120,29 @@ final class AppModel {
         save()
     }
 
+    /// Asked once, at the first launch, or at the first launch after this question existed for a
+    /// user who never gave a name; an empty name is a valid answer.
+    var asksName: Bool {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment.keys.contains(where: { $0.hasPrefix("MISMEET_TEST_") }) { return false }
+        #endif
+        return !state.askedName && state.ownName.isEmpty
+    }
+
+    func answerName(_ name: String?) {
+        if let name { setOwnName(name.trimmingCharacters(in: .whitespacesAndNewlines)) }
+        state.askedName = true
+        save()
+    }
+
     var authorizationText: String {
         switch authorization {
-        case .authorizedAlways: "Always"
-        case .authorizedWhenInUse: "While using the app"
-        case .denied: "Denied"
-        case .restricted: "Restricted"
-        case .notDetermined: "Not asked yet"
-        @unknown default: "Unknown"
+        case .authorizedAlways: String(localized: "Always")
+        case .authorizedWhenInUse: String(localized: "While using the app")
+        case .denied: String(localized: "Denied")
+        case .restricted: String(localized: "Restricted")
+        case .notDetermined: String(localized: "Not asked yet")
+        @unknown default: String(localized: "Unknown")
         }
     }
 
@@ -169,13 +193,24 @@ final class AppModel {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw ContactError.noName }
         var contact = Contact(id: id, name: trimmed, relays: invite.relays.map(\.description), addedAt: Date())
+        contact.share = false
         // Whoever sent a request has added this phone already.
         contact.addBackDone = state.requests.contains { $0.id == id }
         state.contacts.append(contact)
         state.requests.removeAll { $0.id == id }
         save()
-        recipientsChanged()
+        shareQuestion = contact
         Task { await refresh() }
+    }
+
+    /// The answer to `shareQuestion`: sharing with the new contact turns on sharing from this
+    /// phone too, with its permission prompt, when it was off.
+    func answerShareQuestion(share: Bool) {
+        guard let id = shareQuestion?.id else { return }
+        shareQuestion = nil
+        guard share else { return }
+        setSharingEnabled(true)
+        setShare(id, true)
     }
 
     /// Hides an add-back request for good; adding the sender from their invite still works.
@@ -204,7 +239,7 @@ final class AppModel {
         ] as CFDictionary
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
               let thumbnail = CGImageSourceCreateThumbnailAtIndex(source, 0, options) else {
-            tell("Could not use that picture")
+            tell(String(localized: "Could not use that picture"))
             return nil
         }
         return UIImage(cgImage: thumbnail)
@@ -224,7 +259,7 @@ final class AppModel {
             try FileManager.default.createDirectory(at: photoURL(id).deletingLastPathComponent(), withIntermediateDirectories: true)
             try jpeg.write(to: photoURL(id), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
         } catch {
-            return tell("Could not save that picture", detail: "\(error)")
+            return tell(String(localized: "Could not save that picture"), detail: "\(error)")
         }
         state.contacts[index].photoSetAt = Date()
         save()
@@ -256,7 +291,7 @@ final class AppModel {
     func setShare(_ id: String, _ share: Bool) {
         guard let index = state.contacts.firstIndex(where: { $0.id == id }), state.contacts[index].share != share else { return }
         if share, state.contacts.filter(\.share).count >= ProtocolConstants.maxSharingContacts {
-            tell("Cannot share with more than \(ProtocolConstants.maxSharingContacts) contacts")
+            tell(String(localized: "Cannot share with more than \(ProtocolConstants.maxSharingContacts) contacts"))
             return
         }
         state.contacts[index].share = share
@@ -270,9 +305,9 @@ final class AppModel {
 
         var errorDescription: String? {
             switch self {
-            case .ownKey: "That is your own invite."
-            case .duplicate: "That contact is already in the list."
-            case .noName: "Give the contact a name."
+            case .ownKey: String(localized: "That is your own invite.")
+            case .duplicate: String(localized: "That contact is already in the list.")
+            case .noName: String(localized: "Give the contact a name.")
             }
         }
     }
@@ -282,7 +317,7 @@ final class AppModel {
     func publishNow() {
         guard state.sharingEnabled else { return }
         guard authorization == .authorizedAlways || authorization == .authorizedWhenInUse else {
-            tell("Location permission is needed to share your location")
+            tell(String(localized: "Location permission is needed to share your location"))
             return
         }
         pendingTrigger = .manual
@@ -291,6 +326,12 @@ final class AppModel {
 
     private func handle(fix: LocationFix) {
         guard state.sharingEnabled else { return }
+        // Core Location answers a request with its cached position first, which after hours in
+        // one place is that old; the fresh one follows.
+        guard Date().timeIntervalSince(fix.time) <= ProtocolConstants.maxFixAgeSeconds else {
+            log("Waiting for a fresh position: Core Location delivered one older than an hour")
+            return
+        }
         let trigger = pendingTrigger ?? .wakeup
         pendingTrigger = nil
         state.lastFix = fix
@@ -306,11 +347,6 @@ final class AppModel {
            let last = state.lastPublishedAt,
            Date().timeIntervalSince(last) < ProtocolConstants.publishThrottleSeconds {
             log("Skipped publish: published less than a minute ago")
-            return
-        }
-        guard Date().timeIntervalSince(fix.time) <= ProtocolConstants.maxFixAgeSeconds else {
-            log("Skipped publish: the fix is older than an hour")
-            shareFailed("The newest position was over an hour old")
             return
         }
         let recipients = sharingRecipients()
@@ -380,7 +416,7 @@ final class AppModel {
             } else {
                 state.relayListPublishedAt = Date()
                 save()
-                log("Relay list: accepted by \(result.succeeded.count) of \(state.relays.count) relays")
+                log("Relay list: accepted by \(result.succeeded.count) of \(state.relays.count) relays\(result.failed.isEmpty ? "" : ", refused by \(result.summary)")")
             }
         } catch {
             log("Relay list failed: \(error)")
@@ -398,7 +434,7 @@ final class AppModel {
             state.lastPublishedCreatedAt = event.createdAt().asSecs()
             state.lastPublishedAt = Date()
             save()
-            log("\(what): accepted by \(result.succeeded.count) of \(state.relays.count) relays")
+            log("\(what): accepted by \(result.succeeded.count) of \(state.relays.count) relays\(result.failed.isEmpty ? "" : ", refused by \(result.summary)")")
         }
     }
 

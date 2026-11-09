@@ -35,6 +35,8 @@ class StateStoreTest {
         assertEquals(8.0, state.lastFix!!.horizontalAccuracy, 0.0)
         assertNull(state.lastFix!!.speed)
         assertTrue(state.sharingEnabled)
+        assertFalse(state.askedName)
+        assertEquals("", state.ownName)
     }
 
     @Test
@@ -43,6 +45,23 @@ class StateStoreTest {
         assertTrue(contact.share)
         assertEquals(Contact.SharingStatus.UNKNOWN, contact.sharing)
         assertNull(contact.photoSetAt)
+    }
+
+    @Test
+    fun keepsTheNameQuestionAnswered() {
+        val (store, _) = store(null)
+        store.save(PersistedState(ownName = "Aino", askedName = true))
+        val state = store.load()
+        assertTrue(state.askedName)
+        assertEquals("Aino", state.ownName)
+    }
+
+    @Test
+    fun readsAShareFailureStoredWithoutItsKind() {
+        val failure = store("""{"lastShareFailure":{"at":1,"reason":"Could not get a position"}}""").first.load().lastShareFailure!!
+        assertEquals("Could not get a position", failure.reason)
+        assertNull(failure.kind)
+        assertNull(failure.detail)
     }
 
     @Test

@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Build
 import app.mismeet.android.AppModel
 import app.mismeet.android.BuildConfig
+import app.mismeet.android.inEnglish
 import app.mismeet.android.nostr.RelayService
 import app.mismeet.android.store.Contact
 import app.mismeet.android.store.PersistedState
@@ -57,6 +58,8 @@ object ProblemReports {
         crash: String?,
     ): String {
         val contacts = state.contacts
+        // The developer reads reports in English, whatever language the app shows.
+        val english = context.inEnglish()
         val text = buildString {
             appendLine("Mismeet problem report")
             appendLine("Reason: $reason")
@@ -65,11 +68,11 @@ object ProblemReports {
             appendLine("Phone: Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}), ${Build.MANUFACTURER} ${Build.MODEL}")
             appendLine()
             appendLine("This phone")
-            phoneChecks(context, model, state) {}.forEach { appendLine(line(it)) }
+            phoneChecks(english, model, state) {}.forEach { appendLine(line(it)) }
             appendLine()
             appendLine("Relays")
             relayChecks.forEach { check ->
-                val shown = relayCheck(check, state)
+                val shown = relayCheck(english, check, state)
                 val title = if (check.url.trimEnd('/') in PersistedState.DEFAULT_RELAYS) shown.title else "another relay"
                 appendLine(line(shown.copy(title = title)))
             }

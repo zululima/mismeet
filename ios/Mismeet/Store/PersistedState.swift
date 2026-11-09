@@ -14,6 +14,8 @@ struct PersistedState: Codable, Equatable {
     var lastShareFailure: ShareFailure?
     /// The name sent with add-back requests, spec section 4.5; empty sends none.
     var ownName = ""
+    /// The name was asked for once, at the first launch or the first after the question existed.
+    var askedName = false
     var requests: [StoredRequest] = []
     /// Senders whose add-back requests the user dismissed, as hex public keys.
     var dismissedRequests: [String] = []
@@ -61,6 +63,7 @@ extension PersistedState {
         sharingEnabled = try container.decodeIfPresent(Bool.self, forKey: .sharingEnabled) ?? (lastPublishedCreatedAt != nil)
         lastShareFailure = try container.decodeIfPresent(ShareFailure.self, forKey: .lastShareFailure)
         ownName = try container.decodeIfPresent(String.self, forKey: .ownName) ?? ""
+        askedName = try container.decodeIfPresent(Bool.self, forKey: .askedName) ?? false
         requests = try container.decodeIfPresent([StoredRequest].self, forKey: .requests) ?? []
         dismissedRequests = try container.decodeIfPresent([String].self, forKey: .dismissedRequests) ?? []
         reportsEnabled = try container.decodeIfPresent(Bool.self, forKey: .reportsEnabled) ?? false

@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Shared words -->
+    <string name="add">Lisää</string>
+    <string name="cancel">Kumoa</string>
+    <string name="close">Sulje</string>
+    <string name="dismiss">Ohita</string>
+    <string name="save">Tallenna</string>
+    <string name="skip">Ohita</string>
+    <string name="share">Jaa</string>
+    <string name="not_now">Ei nyt</string>
+    <string name="unknown">Tuntematon</string>
+    <string name="just_now">juuri nyt</string>
+    <string name="share_my_location">Jaa sijaintini</string>
+    <string name="check_setup">Tarkista asetukset</string>
+    <string name="contacts">Yhteystiedot</string>
+
+    <!-- Tabs -->
+    <string name="tab_map">Kartta</string>
+    <string name="tab_me">Minä</string>
+
+    <!-- Contact list -->
+    <string name="contacts_empty">Lisää yhteystieto kutsusta, jonka hän lähetti sinulle.</string>
+    <string name="photo_title">Kuva: %1$s</string>
+    <string name="photo_text">Kuva pysyy tässä puhelimessa ja näkyy kartalla alkukirjaimen paikalla.</string>
+    <string name="photo_choose_another">Valitse toinen</string>
+    <string name="photo_remove">Poista kuva</string>
+    <string name="request_added_you">%1$s lisäsi sinut</string>
+    <string name="request_text">Lisää hänet takaisin, niin näette toisenne. Lähetetty %1$s.</string>
+    <string name="add_back">Lisää takaisin</string>
+    <string name="open_in_map">Avaa kartalla</string>
+    <string name="photo">Kuva</string>
+    <string name="remove">Poista</string>
+    <string name="status_place_seen">%1$s, nähty %2$s</string>
+    <string name="status_seen">Nähty %1$s</string>
+    <string name="status_place_seen_stopped">%1$s, nähty %2$s, ei enää jaa</string>
+    <string name="status_seen_stopped">Nähty %1$s, ei enää jaa</string>
+    <string name="status_not_sharing">Ei jaa sinulle</string>
+    <string name="status_no_location">Ei sijaintia vielä</string>
+    <string name="moving_on_foot">jalan %1$s</string>
+    <string name="moving_by_bike">pyörällä %1$s</string>
+    <string name="moving_by_car">autolla %1$s</string>
+    <string name="add_contact">Lisää yhteystieto</string>
+    <string name="name">Nimi</string>
+    <string name="name_placeholder">Millä nimellä kutsut häntä</string>
+    <string name="invite">Kutsu</string>
+    <string name="invite_link">Kutsulinkki</string>
+    <string name="invite_not_valid">Kutsu ei kelpaa</string>
+    <string name="paste">Sijoita</string>
+    <string name="scan_qr_code">Skannaa QR-koodi</string>
+    <string name="scan_prompt">Skannaa kutsu</string>
+    <string name="share_question_title">Jaetaanko sijaintisi henkilölle %1$s?</string>
+    <string name="share_question_text">%1$s näkee sijaintisi, kunnes laitat jakamisen pois hänen kortistaan.</string>
+    <string name="name_question_title">Nimesi</string>
+    <string name="name_question_text">Näytetään lisäämillesi ihmisille, jotta he tietävät, kuka pyytää lisäämään takaisin. Voit jättää sen tyhjäksi.</string>
+
+    <!-- Map -->
+    <string name="directions">Reittiohjeet</string>
+    <string name="everyone">Kaikki</string>
+    <string name="home">Koti</string>
+    <string name="you">Sinä</string>
+    <string name="my_location">Oma sijainti</string>
+    <string name="estimated_title">%1$s, arvio</string>
+    <string name="estimated_snippet">Arvioitu tietä pitkin viimeisestä sijainnista</string>
+    <string name="estimated_snippet_moving">Arvioitu tietä pitkin viimeisestä sijainnista, %1$s</string>
+
+    <!-- Me -->
+    <string name="invite_qr_code">Kutsun QR-koodi</string>
+    <string name="share_invite">Jaa kutsu</string>
+    <string name="share_invite_text">Lisää minut Mismeetiin: %1$s</string>
+    <string name="copy_invite_link">Kopioi kutsulinkki</string>
+    <string name="invite_clip_label">Mismeet-kutsu</string>
+    <string name="invite_footer">Lähetä linkki tai anna hänen skannata koodi.</string>
+    <string name="your_name">Nimesi</string>
+    <string name="sharing_from_this_phone">Jakaminen tästä puhelimesta</string>
+    <string name="sharing_off_footer">Pois: tämä puhelin vain seuraa yhteystietojaan eikä tarvitse sijaintilupaa.</string>
+    <string name="allow_location">Salli sijainti</string>
+    <string name="allow_location_always">Salli sijainti aina</string>
+    <string name="allow_notifications">Salli ilmoitukset</string>
+    <string name="allow_battery">Salli rajoittamaton akunkäyttö</string>
+    <string name="disclosure_title">Sijaintisi jakaminen</string>
+    <string name="disclosure_text">Mismeet kerää sijaintitietoja jakaakseen sijaintisi valitsemillesi yhteystiedoille, myös kun appi on suljettu tai ei käytössä. Jokainen sijainti salataan vain näille yhteystiedoille, lähetetään julkisille Nostr-releille ja vanhenee 24 tunnin jälkeen. Sitä ei koskaan käytetä mainontaan.</string>
+    <string name="continue_button">Jatka</string>
+
+    <!-- Check setup -->
+    <string name="sharing">Jakaminen</string>
+    <string name="share_now">Jaa nyt</string>
+    <string name="last_shared">Jaettu viimeksi %1$s</string>
+    <string name="problem_reports">Ongelmaraportit</string>
+    <string name="send_problem_reports">Lähetä ongelmaraportit</string>
+    <string name="reports_footer">Kun jakaminen epäonnistuu tai appi kaatuu, lähettää kehittäjälle salatun raportin enintään kerran päivässä avaimella, joka on tehty vain sitä raporttia varten. Raportissa on asetusten tarkistukset ja apin viimeisimmät viestit, ei koskaan sijaintiasi, yhteystietojasi tai avaimiasi. Alla oleva painike näyttää raportin ennen kuin lähetät sen.</string>
+    <string name="this_phone">Tämä puhelin</string>
+    <string name="relays">Releet</string>
+    <string name="asking_relays">Kysytään jokaiselta releeltä...</string>
+    <string name="no_contacts">Ei yhteystietoja</string>
+    <string name="no_contacts_detail">Lisää joku hänen lähettämästään kutsusta.</string>
+    <string name="app">Appi</string>
+    <string name="version">Versio</string>
+    <string name="report">Raportti</string>
+    <string name="report_sent">Lähetetty kehittäjälle</string>
+    <string name="report_not_sent">Ei lähetetty: mikään relee ei ottanut sitä vastaan. Yritä myöhemmin uudelleen.</string>
+    <string name="report_question">Lähetetäänkö tämä raportti?</string>
+    <string name="report_question_text">Se lähtee salattuna kehittäjälle avaimella, joka on tehty vain tätä raporttia varten. Siinä ei ole sijaintia, yhteystietojen nimiä eikä avaimia.</string>
+    <string name="sending">Lähetetään...</string>
+    <string name="send">Lähetä</string>
+    <string name="preparing_report">Valmistellaan raporttia...</string>
+    <string name="send_report">Lähetä raportti kehittäjälle</string>
+    <string name="done">Valmis</string>
+    <string name="run_checks_again">Tarkista uudelleen</string>
+    <string name="outcome_ok">Kunnossa</string>
+    <string name="outcome_warning">Varoitus</string>
+    <string name="outcome_problem">Ongelma</string>
+    <string name="outcome_info">Tieto</string>
+
+    <!-- Setup checks -->
+    <string name="check_sharing_off">Pois: tämä puhelin vain seuraa yhteystietojaan eikä jaa mitään.</string>
+    <string name="check_turn_on">Laita päälle</string>
+    <string name="check_on">Päällä</string>
+    <string name="check_location">Sijainti</string>
+    <string name="check_location_off">Pois päältä koko puhelimesta.</string>
+    <string name="check_open_settings">Avaa asetukset</string>
+    <string name="check_gps_network">Pois: sijainnit tulevat verkosta ja voivat heittää satoja metrejä.</string>
+    <string name="check_gps_none">Pois, kuten myös verkkosijainti: Mismeet tarvitsee niistä toisen.</string>
+    <string name="check_network_location">Verkkosijainti</string>
+    <string name="check_network_on">Päällä: käytetään, kun GPS ei löydä mitään, kuten sisätiloissa</string>
+    <string name="check_network_off">Pois: kun GPS ei löydä mitään, kuten sisätiloissa, jakaminen voi epäonnistua.</string>
+    <string name="check_network_none">Ei tässä puhelimessa: kun GPS ei löydä mitään, kuten sisätiloissa, jakaminen voi epäonnistua.</string>
+    <string name="check_location_permission">Sijaintilupa</string>
+    <string name="check_precise">Tarkka</string>
+    <string name="check_approximate">Likimääräinen: yhteystietosi näkevät pisteen, joka voi olla kilometrien päässä.</string>
+    <string name="check_not_allowed">Ei sallittu. Salli se Minä-näytössä.</string>
+    <string name="check_back_to_me">Takaisin Minä-näyttöön</string>
+    <string name="check_background">Taustalla</string>
+    <string name="check_background_ok">Sallittu aina</string>
+    <string name="check_background_problem">Vain kun appi on auki: jakaminen loppuu, kun Mismeet siirtyy taustalle.</string>
+    <string name="check_service">Jakopalvelu</string>
+    <plurals name="check_service_running">
+        <item quantity="one">Käynnissä, jakaa %d minuutin välein</item>
+        <item quantity="other">Käynnissä, jakaa %d minuutin välein</item>
+    </plurals>
+    <string name="check_service_not_running">Ei käynnissä.</string>
+    <string name="check_start_it">Käynnistä</string>
+    <string name="check_notifications">Ilmoitukset</string>
+    <string name="check_notifications_off">Pois: ilmoitus siitä, että jakaminen on päällä, ei näy.</string>
+    <string name="check_battery">Akku</string>
+    <string name="check_battery_optimized">Optimoitu: Android voi pysäyttää jakamisen taustalla.</string>
+    <string name="check_allow_unrestricted">Salli rajoittamaton</string>
+    <string name="check_battery_saver">Virransäästö</string>
+    <string name="check_battery_saver_on">Päällä: Android rajoittaa taustatyötä, mikä voi viivästyttää jakamista.</string>
+    <string name="check_data_saver">Datansäästö</string>
+    <string name="check_data_saver_on">Päällä, eikä Mismeetille ole tehty poikkeusta: Android voi katkaista sen verkkoyhteyden taustalla.</string>
+    <string name="check_sharing_with">Jaetaan</string>
+    <string name="check_sharing_with_nobody">Ei kenellekään: lisää yhteystieto tai laita jakaminen päälle yhteystiedon kortista.</string>
+    <plurals name="check_sharing_with_count">
+        <item quantity="one">%d yhteystiedolle</item>
+        <item quantity="other">%d yhteystiedolle</item>
+    </plurals>
+    <string name="check_last_share">Viimeisin jako</string>
+    <string name="check_last_share_failed">Epäonnistui %1$s: %2$s</string>
+    <string name="check_not_yet">Ei vielä</string>
+    <string name="check_last_position">Viimeisin sijainti</string>
+    <string name="check_last_position_detail">%1$s, tarkkuus %2$s</string>
+    <string name="check_relay_unreachable">Ei tavoitettavissa: %1$s</string>
+    <string name="check_relay_not_an_address">Ei releen osoite</string>
+    <plurals name="check_relay_no_answer">
+        <item quantity="one">Ei vastausta %d sekunnissa</item>
+        <item quantity="other">Ei vastausta %d sekunnissa</item>
+    </plurals>
+    <string name="check_relay_answers">Vastaa</string>
+    <string name="check_relay_answers_empty">Vastaa, mutta siinä ei ole sijaintiasi</string>
+    <string name="check_relay_older">Siinä on vanhempi sijaintisi, jaettu %1$s</string>
+    <string name="check_relay_current">Siinä on sijaintisi, jaettu %1$s</string>
+    <string name="check_contact_shares">Jakaa sinulle. %1$s</string>
+    <string name="check_contact_not_sharing">Ei ole lisännyt sinua tai ei jaa sinulle</string>
+    <string name="check_contact_unknown">Hänen releiltään ei ole vielä löytynyt sijaintia</string>
+
+    <!-- Model messages -->
+    <string name="error_own_invite">Tämä on oma kutsusi.</string>
+    <string name="error_duplicate">Tämä yhteystieto on jo listalla.</string>
+    <string name="error_no_name">Anna yhteystiedolle nimi.</string>
+    <string name="notice_location_needed">Sijaintisi jakaminen vaatii sijaintiluvan</string>
+    <string name="notice_picture">Kuvaa ei voitu käyttää</string>
+    <plurals name="notice_max_sharing">
+        <item quantity="one">Et voi jakaa useammalle kuin %d yhteystiedolle</item>
+        <item quantity="other">Et voi jakaa useammalle kuin %d yhteystiedolle</item>
+    </plurals>
+    <string name="failure_no_position">Sijaintia ei saatu</string>
+    <string name="failure_old_position">Uusin sijainti oli yli tunnin vanha</string>
+    <string name="failure_not_accepted">Mikään relee ei hyväksynyt sitä: %1$s</string>
+    <string name="failure_not_built">Tapahtumaa ei voitu muodostaa</string>
+
+    <!-- Sharing notification -->
+    <string name="notification_channel">Sijainnin jakaminen</string>
+    <string name="notification_title">Mismeet jakaa sijaintiasi</string>
+    <plurals name="notification_text">
+        <item quantity="one">%d minuutin välein, vain yhteystiedoillesi</item>
+        <item quantity="other">%d minuutin välein, vain yhteystiedoillesi</item>
+    </plurals>
+
+    <!-- Photo crop -->
+    <string name="choose">Valitse</string>
+</resources>

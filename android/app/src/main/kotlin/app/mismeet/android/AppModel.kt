@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.BatteryManager
 import android.util.Log
 import app.mismeet.android.checks.ProblemReports
+import app.mismeet.android.checks.failureText
 import app.mismeet.android.identity.DeviceKeys
 import app.mismeet.android.location.Countries
 import app.mismeet.android.location.LocationProvider
@@ -75,6 +76,15 @@ class AppModel private constructor(private val context: Context) {
 
     /** Why an action the user took did not happen, each shown once in a snackbar. */
     val notices: SharedFlow<String> = _notices.asSharedFlow()
+    private val _shareQuestion = MutableStateFlow<Contact?>(null)
+
+    /** A contact just added, whom the app asks whether to share this phone's location with. */
+    val shareQuestion: StateFlow<Contact?> = _shareQuestion.asStateFlow()
+
+    /** Set when a debug launch used the test hooks, so that no question blocks a screenshot run. */
+    @Volatile
+    var testLaunch = false
+    private val english by lazy { context.inEnglish() }
     val keys: Keys = DeviceKeys.loadOrCreate(context)
     val npub: String = keys.publicKey().toBech32()
 
@@ -111,6 +121,19 @@ class AppModel private constructor(private val context: Context) {
         update { it.copy(ownName = name.take(ProtocolConstants.MAX_NAME_LENGTH)) }
     }
 
+    /**
+     * Asked once, at the first launch, or at the first launch after this question existed for a
+     * user who never gave a name; an empty name is a valid answer.
+     */
+    fun asksName(state: PersistedState): Boolean = !testLaunch && !state.askedName && state.ownName.isEmpty()
+
+    /** The answer to [asksName]: a name to keep, or null to skip. */
+    fun answerName(name: String?) {
+        update { state ->
+            state.copy(ownName = name?.trim()?.take(ProtocolConstants.MAX_NAME_LENGTH) ?: state.ownName, askedName = true)
+        }
+    }
+
     // Lifecycle
 
     fun becameActive() {
@@ -119,10 +142,6 @@ class AppModel private constructor(private val context: Context) {
             scope.launch { publishFresh(Trigger.FOREGROUND) }
             LocationService.start(context)
         }
-    }
-
-    fun refreshNow() {
-        scope.launch { refresh() }
     }
 
     /**
@@ -151,7 +170,7 @@ class AppModel private constructor(private val context: Context) {
     fun publishNow() {
         if (!_state.value.sharingEnabled) return
         if (!LocationProvider.hasForegroundPermission(context)) {
-            tell("Location permission is needed to share your location")
+            tell { it.getString(R.string.notice_location_needed) }
             return
         }
         scope.launch { publishFresh(Trigger.MANUAL) }
@@ -167,24 +186,42 @@ class AppModel private constructor(private val context: Context) {
         _openedInvite.value = null
     }
 
-    fun addContact(inviteText: String, name: String) {
-        val invite = Invite.parse(inviteText)
+    /**
+     * Adds a contact with sharing off and asks, through [shareQuestion], whether to share with it.
+     * The debug test hook passes [ask] false, which shares at once instead.
+     */
+    fun addContact(inviteText: String, name: String, ask: Boolean = true) {
+        val invite = runCatching { Invite.parse(inviteText) }
+            .getOrElse { throw IllegalArgumentException(context.getString(R.string.invite_not_valid), it) }
         val id = invite.publicKey.toHex()
-        require(id != keys.publicKey().toHex()) { "That is your own invite." }
-        require(_state.value.contacts.none { it.id == id }) { "That contact is already in the list." }
+        require(id != keys.publicKey().toHex()) { context.getString(R.string.error_own_invite) }
+        require(_state.value.contacts.none { it.id == id }) { context.getString(R.string.error_duplicate) }
         val trimmed = name.trim()
-        require(trimmed.isNotEmpty()) { "Give the contact a name." }
+        require(trimmed.isNotEmpty()) { context.getString(R.string.error_no_name) }
         val contact = Contact(
             id = id,
             name = trimmed,
             relays = invite.relays.map { it.toString() },
+            share = !ask,
             addedAt = System.currentTimeMillis(),
             // Whoever sent a request has added this phone already.
             addBackDone = _state.value.requests.any { it.id == id },
         )
         update { state -> state.copy(contacts = state.contacts + contact, requests = state.requests.filterNot { it.id == id }) }
-        recipientsChanged()
+        if (ask) _shareQuestion.value = contact else if (_state.value.sharingEnabled) recipientsChanged()
         scope.launch { refresh() }
+    }
+
+    /**
+     * The answer to [shareQuestion]: sharing with the new contact also turns on sharing from this
+     * phone when it was off, as the Me screen's switch does.
+     */
+    fun answerShareQuestion(share: Boolean) {
+        val contact = _shareQuestion.value ?: return
+        _shareQuestion.value = null
+        if (!share) return
+        setSharingEnabled(true)
+        setShare(contact.id, true)
     }
 
     /** Hides an add-back request for good; adding the sender from their invite still works. */
@@ -207,7 +244,7 @@ class AppModel private constructor(private val context: Context) {
                 decoder.setTargetSampleSize(max(1, min(info.size.width, info.size.height) / CROP_SOURCE_SIZE))
                 decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
             }
-        }.onFailure { tell("Could not use that picture", it.message) }.getOrNull()
+        }.onFailure { error -> tell(error.message) { it.getString(R.string.notice_picture) } }.getOrNull()
     }
 
     /** A square picture for a contact, kept on this phone only; it is never published. */
@@ -219,7 +256,7 @@ class AppModel private constructor(private val context: Context) {
             }.onSuccess {
                 val now = System.currentTimeMillis()
                 update { state -> state.copy(contacts = state.contacts.map { if (it.id == id) it.copy(photoSetAt = now) else it }) }
-            }.onFailure { tell("Could not use that picture", it.message) }
+            }.onFailure { error -> tell(error.message) { it.getString(R.string.notice_picture) } }
         }
     }
 
@@ -241,7 +278,8 @@ class AppModel private constructor(private val context: Context) {
         val contact = current.contacts.firstOrNull { it.id == id } ?: return
         if (contact.share == share) return
         if (share && current.contacts.count { it.share } >= ProtocolConstants.MAX_SHARING_CONTACTS) {
-            tell("Cannot share with more than ${ProtocolConstants.MAX_SHARING_CONTACTS} contacts")
+            val most = ProtocolConstants.MAX_SHARING_CONTACTS
+            tell { it.resources.getQuantityString(R.plurals.notice_max_sharing, most, most) }
             return
         }
         update { s -> s.copy(contacts = s.contacts.map { if (it.id == id) it.copy(share = share) else it }) }
@@ -257,7 +295,7 @@ class AppModel private constructor(private val context: Context) {
             onFix(it.fix, trigger)
         } ?: run {
             log("No fix available")
-            shareFailed("Could not get a position")
+            shareFailed(ShareFailure.Kind.NO_POSITION)
         }
     }
 
@@ -275,7 +313,7 @@ class AppModel private constructor(private val context: Context) {
             }
             if (now - fix.timeMillis > ProtocolConstants.MAX_FIX_AGE_SECONDS * 1000) {
                 log("Skipped publish: the fix is older than an hour")
-                shareFailed("The newest position was over an hour old")
+                shareFailed(ShareFailure.Kind.OLD_POSITION)
                 return
             }
             val recipients = sharingRecipients()
@@ -287,7 +325,7 @@ class AppModel private constructor(private val context: Context) {
                 LocationEventBuilder.build(fix.payload(batteryLevel()), recipients, keys, now / 1000, current.lastPublishedCreatedAt)
             }.onSuccess { send(it, "Location") }.onFailure {
                 log("Publish failed: ${it.message}")
-                shareFailed("Could not build the event")
+                shareFailed(ShareFailure.Kind.NOT_BUILT)
             }
         }
     }
@@ -340,15 +378,16 @@ class AppModel private constructor(private val context: Context) {
         val result = relays.publish(event, relayUrls)
         if (result.succeeded.isEmpty()) {
             log("$what: no relay accepted it, ${result.summary}")
-            shareFailed("No relay accepted it: ${result.summary}")
+            shareFailed(ShareFailure.Kind.NOT_ACCEPTED, result.summary)
         } else {
             update { it.copy(lastPublishedCreatedAt = event.createdAt().asSecs().toLong(), lastPublishedAt = System.currentTimeMillis()) }
             log("$what: accepted by ${result.succeeded.size} of ${relayUrls.size} relays")
         }
     }
 
-    private fun shareFailed(reason: String) {
-        update { it.copy(lastShareFailure = ShareFailure(System.currentTimeMillis(), reason)) }
+    private fun shareFailed(kind: ShareFailure.Kind, detail: String? = null) {
+        val failure = ShareFailure(System.currentTimeMillis(), failureText(english, kind, detail), kind, detail)
+        update { it.copy(lastShareFailure = failure) }
         scope.launch { reportAutomatically("A share failed") }
     }
 
@@ -580,9 +619,11 @@ class AppModel private constructor(private val context: Context) {
         store.save(_state.value)
     }
 
-    private fun tell(text: String, detail: String? = null) {
-        log(if (detail == null) text else "$text: $detail")
-        _notices.tryEmit(text)
+    /** Shows [text] in the app's language and logs it in English, as problem reports want it. */
+    private fun tell(detail: String? = null, text: (Context) -> String) {
+        val logged = text(english)
+        log(if (detail == null) logged else "$logged: $detail")
+        _notices.tryEmit(text(context))
     }
 
     private fun log(text: String) {

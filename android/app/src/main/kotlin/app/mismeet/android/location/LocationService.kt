@@ -12,6 +12,7 @@ import android.os.IBinder
 import androidx.core.app.ServiceCompat
 import app.mismeet.android.AppModel
 import app.mismeet.android.MainActivity
+import app.mismeet.android.R
 import app.mismeet.protocol.ProtocolConstants
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +31,7 @@ class LocationService : Service() {
     override fun onCreate() {
         super.onCreate()
         running = true
-        val channel = NotificationChannel(CHANNEL, "Location sharing", NotificationManager.IMPORTANCE_LOW)
+        val channel = NotificationChannel(CHANNEL, getString(R.string.notification_channel), NotificationManager.IMPORTANCE_LOW)
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
@@ -58,9 +59,10 @@ class LocationService : Service() {
 
     private fun notification(): Notification {
         val open = PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE)
+        val minutes = (ProtocolConstants.ANDROID_PUBLISH_INTERVAL_SECONDS / 60).toInt()
         return Notification.Builder(this, CHANNEL)
-            .setContentTitle("Mismeet is sharing your location")
-            .setContentText("Every ${ProtocolConstants.ANDROID_PUBLISH_INTERVAL_SECONDS / 60} minutes, with your contacts only")
+            .setContentTitle(getString(R.string.notification_title))
+            .setContentText(resources.getQuantityString(R.plurals.notification_text, minutes, minutes))
             .setSmallIcon(android.R.drawable.ic_menu_mylocation)
             .setOngoing(true)
             .setContentIntent(open)

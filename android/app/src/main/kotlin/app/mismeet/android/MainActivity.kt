@@ -31,6 +31,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import app.mismeet.android.ui.MapScreen
 import app.mismeet.android.ui.MeScreen
 import app.mismeet.protocol.ProtocolConstants
@@ -41,10 +42,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         val model = AppModel.get(this)
-        // Test hook for debuggable builds: `adb shell am start ... --es invites "uri;Name|uri"` adds contacts.
+        // Test hook for debuggable builds: `adb shell am start ... --es invites "uri;Name|uri"` adds contacts
+        // and shares with them without asking, and the name question waits for a launch without it.
         if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
-            intent.getStringExtra("invites")?.split(";")?.forEachIndexed { index, entry ->
-                runCatching { model.addContact(entry.substringAfter('|'), entry.substringBefore('|', "Test ${index + 1}")) }
+            intent.getStringExtra("invites")?.let { invites ->
+                model.testLaunch = true
+                invites.split(";").forEachIndexed { index, entry ->
+                    runCatching { model.addContact(entry.substringAfter('|'), entry.substringBefore('|', "Test ${index + 1}"), ask = false) }
+                }
             }
         }
         if (savedInstanceState == null) openInvite(intent)
@@ -107,13 +112,13 @@ private fun MismeetScreen(model: AppModel) {
                     selected = tab == 0,
                     onClick = { tab = 0 },
                     icon = { Icon(Icons.Filled.Place, contentDescription = null) },
-                    label = { Text("Map") },
+                    label = { Text(stringResource(R.string.tab_map)) },
                 )
                 NavigationBarItem(
                     selected = tab == 1,
                     onClick = { tab = 1 },
                     icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                    label = { Text("Me") },
+                    label = { Text(stringResource(R.string.tab_me)) },
                 )
             }
         },

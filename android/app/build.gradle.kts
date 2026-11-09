@@ -14,7 +14,7 @@ android {
         applicationId = "app.mismeet.android"
         minSdk = 29
         targetSdk = 36
-        versionCode = 17
+        versionCode = 18
         versionName = "0.1.0"
         // Phones are arm64 or, among older ones, 32-bit ARM; the x86 builds of the bindings'
         // native libraries would only make the APK larger.
@@ -47,6 +47,12 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+
+    // Lists the languages of res/values-* as android:localeConfig, so that Android 13 and later
+    // offer them in the app's language setting; res/resources.properties names the default one.
+    androidResources {
+        generateLocaleConfig = true
     }
 
     compileOptions {

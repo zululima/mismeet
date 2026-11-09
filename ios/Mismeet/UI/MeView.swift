@@ -1,5 +1,7 @@
 import SwiftUI
 
+/// One screen without scrolling: the invite, the name, the switch for sharing and the way to the
+/// setup checks, which hold everything else.
 struct MeView: View {
     @Environment(AppModel.self) private var model
 
@@ -12,31 +14,31 @@ struct MeView: View {
                             .resizable()
                             .interpolation(.none)
                             .scaledToFit()
-                            .frame(maxWidth: 240)
+                            .frame(width: 150, height: 150)
                             .frame(maxWidth: .infinity)
                     }
-                    if let link = URL(string: model.inviteLink) {
-                        ShareLink(item: link, message: Text("Add me on Mismeet")) {
-                            Label("Share invite", systemImage: "square.and.arrow.up")
+                    HStack {
+                        if let link = URL(string: model.inviteLink) {
+                            ShareLink(item: link, message: Text("Add me on Mismeet")) {
+                                Label("Share invite", systemImage: "square.and.arrow.up")
+                            }
+                        }
+                        Spacer()
+                        Button("Copy link", systemImage: "doc.on.doc") {
+                            UIPasteboard.general.string = model.inviteLink
                         }
                     }
-                    Button("Copy invite link", systemImage: "doc.on.doc") {
-                        UIPasteboard.general.string = model.inviteLink
-                    }
+                    .buttonStyle(.borderless)
                 } header: {
                     Text("Invite")
                 } footer: {
-                    Text("Send the link, or let them scan the code. When they add you with sharing on, your contacts show a request to add them back.")
+                    Text("Send the link, or let them scan the code.")
                 }
-                Section {
+                Section("Your name") {
                     TextField("Your name", text: Binding(get: { model.state.ownName }, set: { model.setOwnName($0) }))
                         .textContentType(.givenName)
-                } header: {
-                    Text("Your name")
-                } footer: {
-                    Text("Sent to the people you add, so they know who asks to be added back.")
                 }
-                Section("Sharing from this phone") {
+                Section {
                     Toggle("Share my location", isOn: Binding(
                         get: { model.state.sharingEnabled },
                         set: { model.setSharingEnabled($0) }
@@ -46,31 +48,20 @@ struct MeView: View {
                         if model.authorization != .authorizedAlways {
                             Button("Allow location") { model.requestLocationAuthorization() }
                         }
-                        Button("Share now") { model.publishNow() }
-                            .disabled(model.isPublishing)
-                        if let at = model.state.lastPublishedAt {
-                            LabeledContent("Last shared with contacts", value: at.formatted(date: .abbreviated, time: .shortened))
-                        }
-                    } else {
-                        Text("Off: this phone only watches its contacts, shares nothing and needs no location permission.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
                     }
-                }
-                Section {
-                    Toggle("Send problem reports", isOn: Binding(
-                        get: { model.state.reportsEnabled },
-                        set: { model.setReportsEnabled($0) }
-                    ))
                 } header: {
-                    Text("Problem reports")
+                    Text("Sharing from this phone")
                 } footer: {
-                    Text("When a share fails or the app crashes, sends the developer an encrypted report, at most once a day, from a key made for that report alone. It holds the setup checks and the app's recent messages, never your location, contacts or keys. Check setup shows a report before you send one.")
+                    if !model.state.sharingEnabled {
+                        Text("Off: this phone only watches its contacts and needs no location permission.")
+                    }
                 }
                 Section {
                     NavigationLink("Check setup") { SetupChecksView() }
                 }
             }
+            .listSectionSpacing(.compact)
+            .scrollBounceBehavior(.basedOnSize)
             .navigationTitle("Me")
         }
     }

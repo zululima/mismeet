@@ -7,7 +7,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.location.Location
 import android.net.Uri
-import android.text.format.DateUtils
+import android.icu.util.MeasureUnit
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
@@ -26,7 +26,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -44,8 +43,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.DialogProperties
 import app.mismeet.android.AppModel
+import app.mismeet.android.R
+import app.mismeet.android.ago
+import app.mismeet.android.measure
 import app.mismeet.android.store.Contact
 import app.mismeet.android.store.PersistedState
 import app.mismeet.android.store.StoredRequest
@@ -54,7 +58,6 @@ import app.mismeet.protocol.ProtocolConstants
 import app.mismeet.protocol.TravelMode
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import java.util.Locale
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 
@@ -98,13 +101,12 @@ fun ContactList(model: AppModel, onFocus: (String) -> Unit, modifier: Modifier =
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Contacts", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
-            OutlinedButton(onClick = { model.refreshNow() }) { Text("Refresh") }
-            Button(onClick = { adding = Adding("") }) { Text("Add") }
+            Text(stringResource(R.string.contacts), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+            Button(onClick = { adding = Adding("") }) { Text(stringResource(R.string.add)) }
         }
         if (state.contacts.isEmpty() && state.requests.isEmpty()) {
             Text(
-                "Add a contact from the invite they sent you.",
+                stringResource(R.string.contacts_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 16.dp),
             )
@@ -126,7 +128,7 @@ fun ContactList(model: AppModel, onFocus: (String) -> Unit, modifier: Modifier =
                 ContactRow(
                     contact = contact,
                     place = placeNames[contact.id],
-                    distance = distance(contact, state),
+                    distance = distance(context, contact, state),
                     photo = model.photo(contact),
                     onFocus = { onFocus(contact.id) },
                     onPhoto = { if (contact.photoSetAt == null) choosePhoto(contact.id) else photoFor = contact },
@@ -141,19 +143,19 @@ fun ContactList(model: AppModel, onFocus: (String) -> Unit, modifier: Modifier =
     photoFor?.let { contact ->
         AlertDialog(
             onDismissRequest = { photoFor = null },
-            title = { Text("Photo of ${contact.name}") },
-            text = { Text("The photo stays on this phone and shows on the map in place of the initial.") },
+            title = { Text(stringResource(R.string.photo_title, contact.name)) },
+            text = { Text(stringResource(R.string.photo_text)) },
             confirmButton = {
                 TextButton(onClick = {
                     photoFor = null
                     choosePhoto(contact.id)
-                }) { Text("Choose another") }
+                }) { Text(stringResource(R.string.photo_choose_another)) }
             },
             dismissButton = {
                 TextButton(onClick = {
                     photoFor = null
                     model.removePhoto(contact.id)
-                }) { Text("Remove photo") }
+                }) { Text(stringResource(R.string.photo_remove)) }
             },
         )
     }
@@ -172,6 +174,50 @@ fun ContactList(model: AppModel, onFocus: (String) -> Unit, modifier: Modifier =
             onAdd = { invite, name -> model.addContact(invite, name) },
         )
     }
+
+    // The name question comes first, so that the add-back request a share sends carries it.
+    val shareQuestion by model.shareQuestion.collectAsState()
+    if (adding == null && openedInvite == null) {
+        if (model.asksName(state)) {
+            NameQuestion(state.ownName, onAnswer = { model.answerName(it) })
+        } else {
+            shareQuestion?.let { contact -> ShareQuestion(contact, onAnswer = { model.answerShareQuestion(it) }) }
+        }
+    }
+}
+
+@Composable
+private fun NameQuestion(current: String, onAnswer: (String?) -> Unit) {
+    var name by remember { mutableStateOf(current) }
+    AlertDialog(
+        onDismissRequest = { onAnswer(null) },
+        properties = DialogProperties(dismissOnClickOutside = false),
+        title = { Text(stringResource(R.string.name_question_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.name_question_text))
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it.take(ProtocolConstants.MAX_NAME_LENGTH) },
+                    label = { Text(stringResource(R.string.your_name)) },
+                    singleLine = true,
+                )
+            }
+        },
+        confirmButton = { TextButton(onClick = { onAnswer(name) }) { Text(stringResource(R.string.save)) } },
+        dismissButton = { TextButton(onClick = { onAnswer(null) }) { Text(stringResource(R.string.skip)) } },
+    )
+}
+
+@Composable
+private fun ShareQuestion(contact: Contact, onAnswer: (Boolean) -> Unit) {
+    AlertDialog(
+        onDismissRequest = { onAnswer(false) },
+        title = { Text(stringResource(R.string.share_question_title, contact.name)) },
+        text = { Text(stringResource(R.string.share_question_text, contact.name)) },
+        confirmButton = { TextButton(onClick = { onAnswer(true) }) { Text(stringResource(R.string.share)) } },
+        dismissButton = { TextButton(onClick = { onAnswer(false) }) { Text(stringResource(R.string.not_now)) } },
+    )
 }
 
 /** An Add contact dialog to open: an invite to fill in, or one from an add-back request, which stays hidden. */
@@ -181,14 +227,13 @@ private data class Adding(val invite: String, val name: String = "", val fromReq
 private fun RequestRow(request: StoredRequest, onAdd: () -> Unit, onDismiss: () -> Unit) {
     Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("${request.name ?: "Someone"} added you", style = MaterialTheme.typography.titleMedium)
-            val now = System.currentTimeMillis()
-            val age = if (now - request.createdAt * 1000 < DateUtils.MINUTE_IN_MILLIS) "just now"
-            else DateUtils.getRelativeTimeSpanString(request.createdAt * 1000, now, DateUtils.MINUTE_IN_MILLIS)
-            Text("Add them back to see each other. Sent $age.", style = MaterialTheme.typography.bodySmall)
+            val sender = request.name ?: stringResource(R.string.unknown)
+            Text(stringResource(R.string.request_added_you, sender), style = MaterialTheme.typography.titleMedium)
+            val age = ago(LocalContext.current, request.createdAt * 1000)
+            Text(stringResource(R.string.request_text, age), style = MaterialTheme.typography.bodySmall)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Button(onClick = onAdd) { Text("Add back") }
-                TextButton(onClick = onDismiss) { Text("Dismiss") }
+                Button(onClick = onAdd) { Text(stringResource(R.string.add_back)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.dismiss)) }
             }
         }
     }
@@ -212,31 +257,36 @@ private fun ContactRow(
                 Avatar(contact, photo, 48.dp, Modifier.size(48.dp).clickable(onClick = onPhoto))
                 Column(Modifier.weight(1f)) {
                     Text(contact.name, style = MaterialTheme.typography.titleMedium)
-                    Text(status(contact, place), style = MaterialTheme.typography.bodySmall)
+                    Text(status(LocalContext.current, contact, place), style = MaterialTheme.typography.bodySmall)
                 }
                 if (distance != null) Text(distance, style = MaterialTheme.typography.bodyMedium)
                 if (onShare != null) Switch(checked = contact.share, onCheckedChange = onShare)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                if (contact.lastPayload != null) TextButton(onClick = onOpenMap) { Text("Open in map") }
-                TextButton(onClick = onPhoto) { Text("Photo") }
-                TextButton(onClick = onRemove) { Text("Remove") }
+                if (contact.lastPayload != null) TextButton(onClick = onOpenMap) { Text(stringResource(R.string.open_in_map)) }
+                TextButton(onClick = onPhoto) { Text(stringResource(R.string.photo)) }
+                TextButton(onClick = onRemove) { Text(stringResource(R.string.remove)) }
             }
         }
     }
 }
 
 /** Where and when a contact was last seen, such as "Kumpula, seen 2 minutes ago". */
-fun status(contact: Contact, place: String?): String {
+fun status(context: Context, contact: Contact, place: String?): String {
     val payload = contact.lastPayload
     if (payload != null) {
-        val age = DateUtils.getRelativeTimeSpanString(payload.fixTime * 1000, System.currentTimeMillis(), DateUtils.MINUTE_IN_MILLIS)
-        val stale = if (contact.sharing == Contact.SharingStatus.NOT_SHARING) ", no longer sharing" else ""
-        return if (place != null) "$place, seen $age$stale" else "Seen $age$stale"
+        val age = ago(context, payload.fixTime * 1000)
+        val stopped = contact.sharing == Contact.SharingStatus.NOT_SHARING
+        return when {
+            place != null && stopped -> context.getString(R.string.status_place_seen_stopped, place, age)
+            place != null -> context.getString(R.string.status_place_seen, place, age)
+            stopped -> context.getString(R.string.status_seen_stopped, age)
+            else -> context.getString(R.string.status_seen, age)
+        }
     }
     return when (contact.sharing) {
-        Contact.SharingStatus.NOT_SHARING -> "Not sharing with you"
-        else -> "No location yet"
+        Contact.SharingStatus.NOT_SHARING -> context.getString(R.string.status_not_sharing)
+        else -> context.getString(R.string.status_no_location)
     }
 }
 
@@ -244,26 +294,26 @@ fun status(contact: Contact, place: String?): String {
  * How far this phone's last fix is from a contact's, such as "850 m", "1.4 km" or "18 km", while
  * sharing keeps that fix current.
  */
-fun distance(contact: Contact, state: PersistedState): String? {
+fun distance(context: Context, contact: Contact, state: PersistedState): String? {
     val payload = contact.lastPayload ?: return null
     val own = state.lastFix?.takeIf { state.sharingEnabled } ?: return null
     val result = FloatArray(1)
     Location.distanceBetween(own.latitude, own.longitude, payload.latitude, payload.longitude, result)
     val rounded = (result[0] / 10).roundToInt() * 10
-    if (rounded < 1_000) return "$rounded m"
+    if (rounded < 1_000) return measure(context, rounded, MeasureUnit.METER)
     val km = result[0] / 1_000
-    return if (km < 10) String.format(Locale.getDefault(), "%.1f km", km) else "${km.roundToInt()} km"
+    return if (km < 10) measure(context, km, MeasureUnit.KILOMETER, 1) else measure(context, km.roundToInt(), MeasureUnit.KILOMETER)
 }
 
 /** How a contact was moving at the fix, such as "by bike at 18 km/h", or null when it was not. */
-fun movement(payload: LocationPayload): String? {
+fun movement(context: Context, payload: LocationPayload): String? {
     val speed = payload.speed?.takeIf { it >= ProtocolConstants.ESTIMATE_MIN_SPEED } ?: return null
     val mode = when (TravelMode.of(speed)) {
-        TravelMode.FOOT -> "on foot"
-        TravelMode.BIKE -> "by bike"
-        TravelMode.CAR -> "by car"
+        TravelMode.FOOT -> R.string.moving_on_foot
+        TravelMode.BIKE -> R.string.moving_by_bike
+        TravelMode.CAR -> R.string.moving_by_car
     }
-    return "$mode at ${(speed * 3.6).roundToInt()} km/h"
+    return context.getString(mode, measure(context, (speed * 3.6).roundToInt(), MeasureUnit.KILOMETER_PER_HOUR))
 }
 
 fun openMap(context: Context, contact: Contact) {
@@ -282,14 +332,20 @@ private fun AddContactDialog(start: Adding, onDismiss: () -> Unit, onAdd: (Strin
     var invite by remember(start) { mutableStateOf(start.invite) }
     var name by remember(start) { mutableStateOf(start.name) }
     var error by remember { mutableStateOf<String?>(null) }
+    val notValid = stringResource(R.string.invite_not_valid)
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (start.fromRequest) "Add back" else "Add contact") },
+        title = { Text(stringResource(if (start.fromRequest) R.string.add_back else R.string.add_contact)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (!start.fromRequest) InviteField(invite, onChange = { invite = it })
-                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") })
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text(stringResource(R.string.name)) },
+                    placeholder = { Text(stringResource(R.string.name_placeholder)) },
+                )
                 error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
             }
         },
@@ -298,26 +354,27 @@ private fun AddContactDialog(start: Adding, onDismiss: () -> Unit, onAdd: (Strin
                 onClick = {
                     runCatching { onAdd(invite, name) }
                         .onSuccess { onDismiss() }
-                        .onFailure { error = it.message ?: "Not a valid invite" }
+                        .onFailure { error = it.message ?: notValid }
                 },
                 enabled = invite.isNotBlank() && name.isNotBlank(),
-            ) { Text("Add") }
+            ) { Text(stringResource(R.string.add)) }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }
 
 @Composable
 private fun InviteField(invite: String, onChange: (String) -> Unit) {
     val context = LocalContext.current
+    val prompt = stringResource(R.string.scan_prompt)
     val scanner = rememberLauncherForActivityResult(ScanContract()) { result ->
         result.contents?.let(onChange)
     }
     OutlinedTextField(
         value = invite,
         onValueChange = onChange,
-        label = { Text("Invite") },
-        placeholder = { Text("Invite link") },
+        label = { Text(stringResource(R.string.invite)) },
+        placeholder = { Text(stringResource(R.string.invite_link)) },
         minLines = 3,
     )
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -326,15 +383,15 @@ private fun InviteField(invite: String, onChange: (String) -> Unit) {
                 context.getSystemService(ClipboardManager::class.java)
                     ?.primaryClip?.getItemAt(0)?.coerceToText(context)?.toString().orEmpty(),
             )
-        }) { Text("Paste") }
+        }) { Text(stringResource(R.string.paste)) }
         TextButton(onClick = {
             scanner.launch(
                 ScanOptions()
                     .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                    .setPrompt("Scan the invite")
+                    .setPrompt(prompt)
                     .setBeepEnabled(false)
                     .setOrientationLocked(false),
             )
-        }) { Text("Scan QR code") }
+        }) { Text(stringResource(R.string.scan_qr_code)) }
     }
 }

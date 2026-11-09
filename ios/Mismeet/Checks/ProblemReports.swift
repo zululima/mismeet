@@ -90,10 +90,10 @@ enum ProblemReports {
             "",
             "This phone",
         ]
-        out += SetupChecks.phone(model: model, servicesEnabled: servicesEnabled, openSettings: {}).map(line)
+        out += SetupChecks.phone(model: model, servicesEnabled: servicesEnabled, openSettings: {}, in: .report).map(line)
         out += ["", "Relays"]
         out += relayChecks.map { check in
-            var shown = SetupChecks.relay(check, state: state)
+            var shown = SetupChecks.relay(check, state: state, in: .report)
             if !PersistedState.defaultRelays.contains(check.url.trimmingCharacters(in: CharacterSet(charactersIn: "/"))) {
                 shown.title = "another relay"
             }

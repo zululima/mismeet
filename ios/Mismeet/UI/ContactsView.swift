@@ -34,6 +34,9 @@ struct ContactList: View {
 
     @Environment(AppModel.self) private var model
     @State private var adding: Adding?
+    @State private var askingName = false
+    @State private var nameDraft = ""
+    @State private var askingShare = false
     @Binding var height: PanelHeight
     /// Shows a contact on the map.
     let focus: (String) -> Void
@@ -44,63 +47,98 @@ struct ContactList: View {
                 Capsule()
                     .fill(.secondary.opacity(0.5))
                     .frame(width: 36, height: 5)
-                HStack(spacing: 12) {
+                HStack {
                     Text("Contacts").font(.title2.bold())
                     Spacer()
-                    Button("Refresh", systemImage: "arrow.clockwise") {
-                        Task { await model.refresh() }
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(model.isRefreshing)
                     Button("Add", systemImage: "plus") { adding = Adding() }
-                        .buttonStyle(.borderedProminent)
+                        .labelStyle(.iconOnly)
+                        .font(.title2)
                 }
-                .labelStyle(.iconOnly)
-                .buttonBorderShape(.circle)
-                .controlSize(.large)
             }
-            .padding([.horizontal, .top])
-            .padding(.bottom, 12)
+            .padding(.horizontal)
+            .padding(.top, 8)
+            .padding(.bottom, 4)
             .contentShape(Rectangle())
             .onTapGesture { withAnimation(.snappy) { height = height == .collapsed ? .medium : .collapsed } }
             .gesture(DragGesture(minimumDistance: 10).onEnded { drag in
                 withAnimation(.snappy) { height = drag.translation.height < 0 ? height.higher : height.lower }
             })
-            if height != .collapsed {
-                List {
-                    ForEach(model.state.requests) { request in
-                        RequestRow(request: request) {
-                            adding = Adding(invite: request.invite, name: request.name ?? "", fromRequest: true)
-                        }
-                        .listRowBackground(Color.clear)
+            List {
+                ForEach(model.state.requests) { request in
+                    RequestRow(request: request) {
+                        adding = Adding(invite: request.invite, name: request.name ?? "", fromRequest: true)
                     }
-                    if model.state.contacts.isEmpty, model.state.requests.isEmpty {
-                        ContentUnavailableView(
-                            "No contacts",
-                            systemImage: "person.2",
-                            description: Text("Add a contact from the invite they sent you.")
-                        )
-                        .listRowBackground(Color.clear)
-                    }
-                    ForEach(model.state.contacts) { contact in
-                        ContactRow(contact: contact, focus: focus)
-                            .listRowBackground(Color.clear)
-                    }
-                    .onDelete { offsets in
-                        model.removeContacts(at: offsets)
-                    }
+                    .listRowBackground(Color.clear)
                 }
-                .listStyle(.plain)
-                .scrollContentBackground(.hidden)
-                .containerRelativeFrame(.vertical) { length, _ in length * height.fraction }
-                .refreshable { await model.refresh() }
+                if model.state.contacts.isEmpty, model.state.requests.isEmpty {
+                    ContentUnavailableView(
+                        "No contacts",
+                        systemImage: "person.2",
+                        description: Text("Add a contact from the invite they sent you.")
+                    )
+                    .listRowBackground(Color.clear)
+                }
+                ForEach(model.state.contacts) { contact in
+                    ContactRow(contact: contact, focus: focus)
+                        .listRowBackground(Color.clear)
+                }
+                .onDelete { offsets in
+                    model.removeContacts(at: offsets)
+                }
             }
+            .listStyle(.plain)
+            .scrollContentBackground(.hidden)
+            .containerRelativeFrame(.vertical) { length, _ in length * height.fraction }
+            // Rows scrolled under the tab bar would turn its background on and off.
+            .clipped()
+            .opacity(height == .collapsed ? 0 : 1)
+            .allowsHitTesting(height != .collapsed)
+            .refreshable { await model.refresh() }
         }
-        .sheet(item: $adding) { AddContactView(invite: $0.invite, name: $0.name, fromRequest: $0.fromRequest) }
+        .sheet(item: $adding, onDismiss: askNext) {
+            AddContactView(invite: $0.invite, name: $0.name, fromRequest: $0.fromRequest)
+        }
         .onChange(of: model.openedInvite, initial: true) { _, link in
             guard let link else { return }
             adding = Adding(invite: link)
             model.openedInvite = nil
+        }
+        .onAppear { if adding == nil, model.openedInvite == nil { askNext() } }
+        .alert("Your name", isPresented: $askingName) {
+            TextField("Your name", text: $nameDraft)
+                .textContentType(.givenName)
+            Button("Skip", role: .cancel) {
+                model.answerName(nil)
+                askNext()
+            }
+            Button("Save") {
+                model.answerName(nameDraft)
+                askNext()
+            }
+        } message: {
+            Text("Shown to the people you add, so they know who asks to be added back. You can leave it empty.")
+        }
+        .background {
+            Color.clear.alert(
+                Text("Share your location with \(model.shareQuestion?.name ?? "")?"),
+                isPresented: $askingShare,
+                presenting: model.shareQuestion
+            ) { _ in
+                Button("Not now", role: .cancel) { model.answerShareQuestion(share: false) }
+                Button("Share") { model.answerShareQuestion(share: true) }
+            } message: { contact in
+                Text("\(contact.name) sees where you are until you turn it off in their card.")
+            }
+        }
+    }
+
+    /// The name question comes first, so that the add-back request a share sends carries it.
+    private func askNext() {
+        if model.asksName {
+            nameDraft = model.state.ownName
+            askingName = true
+        } else if model.shareQuestion != nil {
+            askingShare = true
         }
     }
 }
@@ -113,7 +151,7 @@ private struct RequestRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("\(request.name ?? "Someone") added you").font(.headline)
+            Text("\(request.name ?? String(localized: "Unknown")) added you").font(.headline)
             Text("Add them back to see each other. Sent \(sent).")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -145,7 +183,7 @@ struct ContactRow: View {
     var body: some View {
         HStack {
             PhotosPicker(selection: $pickedPhoto, matching: .images) {
-                ContactAvatar(contact: contact)
+                ContactAvatar(contact: contact, size: 40)
             }
             .buttonStyle(.borderless)
             .contextMenu {
@@ -157,15 +195,15 @@ struct ContactRow: View {
                 if contact.lastPayload != nil { focus(contact.id) }
             } label: {
                 HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(contact.name).font(.headline)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(contact.name).font(.body.weight(.semibold))
                         Text(ContactRow.status(of: contact, place: model.placeNames[contact.id]))
-                            .font(.subheadline)
+                            .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
                     if let distance = ContactRow.distance(to: contact, in: model.state) {
-                        Text(distance).font(.subheadline).foregroundStyle(.secondary)
+                        Text(distance).font(.footnote).foregroundStyle(.secondary)
                     }
                 }
                 .contentShape(Rectangle())
@@ -196,16 +234,23 @@ struct ContactRow: View {
     }
 
     /// Where and when a contact was last seen, such as "Kumpula, seen 2 minutes ago".
-    static func status(of contact: Contact, place: String?) -> String {
+    static func status(of contact: Contact, place: String?, bundle: Bundle = .main, locale: Locale = .current) -> String {
         if let payload = contact.lastPayload {
             let fixed = Date(timeIntervalSince1970: TimeInterval(payload.fixTime))
-            let age = RelativeDateTimeFormatter().localizedString(for: fixed, relativeTo: Date())
-            let stale = contact.sharing == .notSharing ? ", no longer sharing" : ""
-            return place.map { "\($0), seen \(age)\(stale)" } ?? "Seen \(age)\(stale)"
+            let formatter = RelativeDateTimeFormatter()
+            formatter.locale = locale
+            formatter.dateTimeStyle = .named
+            let age = formatter.localizedString(for: min(fixed, Date()), relativeTo: Date())
+            let seen = if let place {
+                String(localized: "\(place), seen \(age)", bundle: bundle)
+            } else {
+                String(localized: "Seen \(age)", bundle: bundle)
+            }
+            return contact.sharing == .notSharing ? String(localized: "\(seen), no longer sharing", bundle: bundle) : seen
         }
         switch contact.sharing {
-        case .notSharing: return "Not sharing with you"
-        case .sharing, .unknown: return "No location yet"
+        case .notSharing: return String(localized: "Not sharing with you", bundle: bundle)
+        case .sharing, .unknown: return String(localized: "No location yet", bundle: bundle)
         }
     }
 
@@ -218,7 +263,7 @@ struct ContactRow: View {
         let rounded = Int((metres / 10).rounded()) * 10
         if rounded < 1_000 { return "\(rounded) m" }
         let km = metres / 1_000
-        return km < 10 ? "\(km.formatted(.number.precision(.fractionLength(1)))) km" : "\(Int(km.rounded())) km"
+        return km < 10 ? "\(km.formatted(.number.precision(.fractionLength(1)))) km" : "\(Int(km.rounded()).formatted()) km"
     }
 }
 
