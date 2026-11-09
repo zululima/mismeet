@@ -13,8 +13,9 @@ follows it, and a protocol change edits the spec first, in the same change.
   1440x730 and links to both.
 - `ios/`: Swift and SwiftUI app. XcodeGen generates `ios/Mismeet.xcodeproj` from
   `ios/project.yml`. Never edit the `.pbxproj`; change `project.yml` and regenerate. Deployment
-  target iOS 18. Location comes from significant location change monitoring with the "Always"
-  permission, and the app publishes on each wakeup. Under `ios/Mismeet/`: `Protocol/` (the
+  target iOS 18. Location comes from significant location change monitoring and a 150 m region
+  around the last fix, both with the "Always" permission, and from a background app refresh
+  (`BGAppRefreshTask`, the `fetch` background mode); the app publishes on each wakeup. Under `ios/Mismeet/`: `Protocol/` (the
   wire format, mirrored in Kotlin), `App/` (the model and the app delegate that starts
   monitoring on a background launch), `Identity/` (Keychain), `Store/` (JSON state in
   Application Support), `Nostr/` (one short-lived client per publish or fetch), `Location/`,

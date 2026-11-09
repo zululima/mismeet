@@ -9,7 +9,6 @@
     <string name="dismiss">Dismiss</string>
     <string name="save">Save</string>
     <string name="skip">Skip</string>
-    <string name="share">Share</string>
     <string name="not_now">Not now</string>
     <string name="unknown">Unknown</string>
     <string name="just_now">just now</string>
@@ -52,7 +51,10 @@
     <string name="scan_qr_code">Scan QR code</string>
     <string name="scan_prompt">Scan the invite</string>
     <string name="share_question_title">Share your location with %1$s?</string>
-    <string name="share_question_text">%1$s sees where you are until you turn it off in their card.</string>
+    <string name="share_question_text">%1$s sees where you are for as long as you choose. You can stop it in their card.</string>
+    <string name="share_for_hour">Share for one hour</string>
+    <string name="share_until_end_of_day">Share until end of day</string>
+    <string name="share_indefinitely">Share indefinitely</string>
     <string name="name_question_title">Your name</string>
     <string name="name_question_text">Shown to the people you add, so they know who asks to be added back. You can leave it empty.</string>
 
@@ -65,6 +67,8 @@
     <string name="estimated_title">%1$s, estimated</string>
     <string name="estimated_snippet">Guessed along the road from the last fix</string>
     <string name="estimated_snippet_moving">Guessed along the road from the last fix, %1$s</string>
+    <string name="shared_until_end_of_day">Until end of day</string>
+    <string name="shared_until">Until %1$s</string>
 
     <!-- Me -->
     <string name="invite_qr_code">Invite QR code</string>

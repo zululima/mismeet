@@ -91,10 +91,14 @@ the contact exists once the user confirms. Adding a contact has two effects on t
 - Sharing: the adder's location events include a real entry for the contact.
 - Watching: the adder's reader fetches and decrypts the contact's location events.
 
-Sharing can be switched off per contact (`share` flag). A new contact starts with `share` off:
-right after adding, the app asks whether to share the user's location with them, and only a yes
-turns `share` on, together with sharing itself (section 8.1) when that was off. A stored record
-without the flag, written before this question existed, reads it as on. Watching is always on;
+Sharing can be switched on and off per contact (`share` flag), in the contact's card. A new
+contact starts with `share` off: right after adding, the app asks whether to share the user's
+location with them for one hour, until the end of the day or indefinitely, and only one of
+those answers turns `share` on, together with sharing itself (section 8.1) when that was off.
+Switching `share` on in the card asks the same. The end of the day is the next midnight in the
+phone's time zone at the time of the answer. A share for a limited time ends as section 8.3
+describes. A stored record without the flag, written before this question existed, reads it as
+on, without an end. Watching is always on;
 when the contact has not added the adder, the reader finds no entry it can decrypt and shows the
 contact as not sharing.
 
@@ -111,7 +115,7 @@ Each contact record holds, locally only:
 - public key (32 bytes),
 - display name,
 - relay URLs, from the invite and later from kind `10002` (section 7.1),
-- `share` flag,
+- `share` flag, and the time the share ends when it was given for a limited time,
 - whether its add-back request was sent or is not needed (section 4.5),
 - the latest decrypted payload with its event `created_at` and event id (section 8.4).
 
@@ -120,8 +124,8 @@ version 1.
 
 ### 4.4 Removal
 
-Removing a contact, or switching `share` off, triggers a publish without that contact
-(section 8.5). Data the removed contact already fetched stays on their device.
+Removing a contact, switching `share` off or reaching the end of a limited share triggers a
+publish without that contact (section 8.3). Data the removed contact already fetched stays on their device.
 
 ### 4.5 Add-back request
 
@@ -365,12 +369,16 @@ A relay is suitable when it:
 - accepts kind `1059` from any public key and serves it by `#p` to unauthenticated readers, for
   add-back requests (section 4.5).
 
-The app's default relays are chosen against this list. Candidate defaults, to be verified
-against it before release: `wss://relay.damus.io`, `wss://nos.lol`, `wss://relay.primal.net`.
-On 2026-11-05 nos.lol and relay.primal.net served a kind `1059` to anyone asking by `#p` and by
-id, while relay.damus.io accepted it and served it to nobody, with or without `AUTH`; requests
-to a default user therefore reach them through the other two, and problem reports (section 8.8)
-go only to those two.
+The app's default relays are chosen against this list: `wss://relay.damus.io`,
+`wss://relay.nostr.net`, `wss://relay.primal.net`. The relay probe of the Android `protocol`
+module tests a relay against it. On 2026-11-09 all three accepted kinds `31122`, `10002` and
+`1059` from a new key, replaced the location event and served the newest back, but only
+relay.primal.net served a kind `1059` to a reader asking by `#p` without `AUTH`; relay.damus.io,
+relay.nostr.net and relay.snort.social served it to nobody, while offchain.pub, nostr.oxtr.dev
+and nostr-pub.wellorder.net did. Requests to a default user therefore reach them through
+relay.primal.net. nos.lol, a default until then, answered no event within the `OK` timeout
+from 2026-11-05 on; an app that stored a relay list holding it replaces it with
+relay.nostr.net and publishes the new kind `10002` once sharing is on.
 
 ## 8. Client behaviour
 
@@ -383,12 +391,12 @@ user's. Turning sharing off counts as switching `share` off for every contact (s
 
 A publisher publishes when:
 
-- iOS: a significant location change wakes the app, the app comes to the foreground, or the
-  user asks for a refresh;
+- iOS: a significant location change or leaving the region around the last fix wakes the app,
+  the background refresh runs, the app comes to the foreground, or the user asks for a refresh;
 - Android: the foreground service's location timer fires (default every 10 minutes, whether or
   not the position changed), the app comes to the foreground, or the user asks for a refresh;
-- either platform: a contact is removed or its `share` flag changes, the relay list changes, or
-  the user turns sharing on or off; turning it on also publishes the relay list.
+- either platform: a contact is removed, its `share` flag changes or its share ends, the relay
+  list changes, or the user turns sharing on or off; turning it on also publishes the relay list.
 
 Publishing is throttled to at most once per 60 seconds, except for the contact and relay list
 changes above. The fix used MUST be at most one hour old; if no such fix exists the publisher
@@ -396,8 +404,19 @@ requests one, and skips the publish if none arrives in time. The previous event 
 the relays until it expires.
 
 Android publishes on a fixed timer so that publish times tell an observer nothing about
-movement. iOS cannot schedule background work without a push service, so iOS publish times
-follow the phone's movement; section 9 lists this leak.
+movement. iOS cannot run background work on a timer without a push service, so it publishes
+on movement and asks for refreshes:
+
+- After each fix it uses, it monitors a circular region of 150 m around that fix; leaving it
+  wakes the app, which asks for a fix and publishes. A significant location change still wakes
+  it after about 500 m when the region was not left first.
+- After each publish it asks the system for a background app refresh no earlier than four hours
+  later, or at the end of the soonest limited share when that comes first. A refresh asks for a
+  fix and publishes, so that a phone that stays in one place replaces its event before it
+  expires (section 6). The system picks the time, later than asked when the app is seldom
+  used, and never runs it while Background App Refresh is off for the app.
+
+iOS publish times therefore follow the phone's movement; section 9 lists this leak.
 
 ### 8.2 When to fetch
 
@@ -416,6 +435,11 @@ never published there is nothing to revoke.
 
 When no contact has `share` on, the publisher stops publishing after that one revocation
 event.
+
+A share for a limited time ends at its end time: no event published after it has an entry for
+that contact. The first time the app runs after the end, for a publish, a wakeup, a refresh or
+the foreground, it switches `share` off for that contact and publishes as above. Until then the
+contact can read the last event that included them, with a fix from before the end.
 
 ### 8.4 Reader cache
 
@@ -558,7 +582,8 @@ and ships the app; a fork uses its own.
 What a relay operator, or anyone reading the relay, learns from the protocol:
 
 - that a public key uses Mismeet (the kind), and which relays it uses;
-- when it publishes, which on iOS correlates with movement (section 8.1);
+- when it publishes, which on iOS correlates with movement and with the times the system ran a
+  background refresh (section 8.1);
 - a bucketed count of recipients: 4, 8, 16, 32 or 64;
 - the reader's IP address and the authors it asks about on that relay, at fetch time, without
   the reader's key (section 7.3);
@@ -616,7 +641,7 @@ Other properties:
 | Automatic problem reports | at most one per 86400 seconds |
 | Log lines in a problem report | at most 50 |
 | Reports key | `npub1zvqr2zn45kdr0epvfc600z92sc7fdmhf8p46dz3e6tmwug8fk7fquge3l4` |
-| Report relays | `wss://nos.lol`, `wss://relay.primal.net` |
+| Report relays | `wss://relay.nostr.net`, `wss://relay.primal.net` |
 | Content version | `1` |
 | Payload version | `1` |
 | Expiration | `created_at + 86400` seconds |
@@ -628,6 +653,9 @@ Other properties:
 | Publish throttle | 60 seconds |
 | Maximum fix age at publish | 3600 seconds |
 | Android publish interval | 600 seconds |
+| iOS region radius | 150 m |
+| iOS background refresh, earliest | 14400 seconds after the last publish |
+| Limited share durations | 3600 seconds, or until the next local midnight |
 | Foreground fetch interval | 60 seconds |
 | Connect timeout | 5 seconds |
 | `OK` timeout | 10 seconds |

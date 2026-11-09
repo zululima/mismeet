@@ -34,7 +34,7 @@ fun main(args: Array<String>) = runBlocking {
     val readers = readerInvites.map { it.publicKey }
     val latitude = args[1].toDouble()
     val longitude = args[2].toDouble()
-    val relays = if (args.size > 3) args.drop(3) else listOf("wss://relay.damus.io", "wss://nos.lol", "wss://relay.primal.net")
+    val relays = if (args.size > 3) args.drop(3) else listOf("wss://relay.damus.io", "wss://relay.nostr.net", "wss://relay.primal.net")
 
     val name = System.getenv("MISMEET_FAKE_NAME")?.takeIf { it.isNotBlank() } ?: "fake-publisher"
     val keyFile = File("build/$name.key")

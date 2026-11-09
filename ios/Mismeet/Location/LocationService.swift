@@ -52,7 +52,10 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
     var onFix: ((LocationFix) -> Void)?
     var onAuthorizationChange: ((CLAuthorizationStatus) -> Void)?
     var onFailure: ((Error) -> Void)?
+    var onRegionExit: (() -> Void)?
+    var onRegionFailure: ((Error) -> Void)?
 
+    private static let regionIdentifier = "last-fix"
     private let manager = CLLocationManager()
     private var monitoring = false
 
@@ -87,9 +90,26 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
         monitoring = true
     }
 
+    /// Spec section 8.1: leaving this region wakes the app, also when it is not running.
+    func monitorRegion(around fix: LocationFix) {
+        guard manager.authorizationStatus == .authorizedAlways,
+              CLLocationManager.isMonitoringAvailable(for: CLCircularRegion.self) else { return }
+        let region = CLCircularRegion(
+            center: CLLocationCoordinate2D(latitude: fix.latitude, longitude: fix.longitude),
+            radius: min(ProtocolConstants.regionRadiusMetres, manager.maximumRegionMonitoringDistance),
+            identifier: Self.regionIdentifier
+        )
+        region.notifyOnEntry = false
+        region.notifyOnExit = true
+        manager.startMonitoring(for: region)
+    }
+
     /// Also ends a registration left by an earlier process, which would otherwise keep relaunching the app.
     func stopMonitoring() {
         manager.stopMonitoringSignificantLocationChanges()
+        for region in manager.monitoredRegions {
+            manager.stopMonitoring(for: region)
+        }
         manager.allowsBackgroundLocationUpdates = false
         monitoring = false
     }
@@ -105,6 +125,14 @@ final class LocationService: NSObject, CLLocationManagerDelegate {
 
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
         Task { @MainActor in self.onFailure?(error) }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, didExitRegion region: CLRegion) {
+        Task { @MainActor in self.onRegionExit?() }
+    }
+
+    nonisolated func locationManager(_ manager: CLLocationManager, monitoringDidFailFor region: CLRegion?, withError error: Error) {
+        Task { @MainActor in self.onRegionFailure?(error) }
     }
 
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {

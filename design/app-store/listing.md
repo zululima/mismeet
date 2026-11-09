@@ -67,7 +67,7 @@ What's New in This Version, the version's `CHANGELOG.md` section without the hea
 ```text
 Mismeet needs no account: each install creates its own key on the device.
 
-Location: sharing is off until the user turns on Share my location on the Me tab; until then the app only shows contacts and needs no location permission. Turned on, it asks for location while in use, then Always. With Always it publishes the user's position, end-to-end encrypted, on significant location changes while the app is closed, so that the contacts the user chose see a recent position. It publishes only for contacts the user added and left sharing on, and nothing when there are none.
+Location: sharing is off until the user turns on Share my location on the Me tab; until then the app only shows contacts and needs no location permission. Turned on, it asks for location while in use, then Always. With Always it publishes the user's position, end-to-end encrypted, while the app is closed: on leaving a region of 150 m around the last position, on significant location changes, and in Background App Refresh (the fetch background mode), which republishes a phone that stays in one place before its last position expires after 24 hours. It publishes only for contacts the user chose to share with, for the time they chose (one hour, until the end of the day or indefinitely), and nothing when there are none.
 
 To try it, use two devices. On each, open the Me tab to show the invite QR code. On the other, tap + beside Contacts at the bottom of the map, then Scan QR code, and add it. Within a minute each phone shows the other on the map. With one device, the Me tab shows the invite and the map shows your own position.
 ```
@@ -85,11 +85,11 @@ Setup and main features
 No account, login or sample files are needed.
 1. Open Mismeet, turn on Share my location on the Me tab and allow location access while using the app, then tap Allow location for Always, so that the position updates in the background.
 2. To add a contact, open the Me tab on their device to show its invite QR code. On yours, tap + beside Contacts at the bottom of the map, tap Scan QR code, scan it, type a name and tap Add. Do the same the other way round to share in both directions.
-3. Within about a minute the map shows the contact's position together with yours, and the contact list, pulled up from the bottom of the map, shows where and how long ago it was seen. Each contact has a switch to stop sharing your location with them, and swiping a contact removes it.
+3. Within about a minute the map shows the contact's position together with yours, and the contact list, pulled up from the bottom of the map, shows where and how long ago it was seen. Tapping a contact opens its card, whose switch shares your location with them for one hour, until the end of the day or indefinitely, or stops sharing, and swiping a contact removes it.
 With a single device, the Me tab shows the invite and the map shows your own position. Seeing a contact needs a second device running Mismeet, as in the screen recording.
 
 External services
-- Public Nostr relays: relay.damus.io, nos.lol and relay.primal.net. They store the encrypted location events and the list of relays each user publishes to, and cannot read locations.
+- Public Nostr relays: relay.damus.io, relay.nostr.net and relay.primal.net. They store the encrypted location events and the list of relays each user publishes to, and cannot read locations.
 - Apple MapKit for the map.
 - The open-source Nostr Dev Kit library (MIT licence) for the Nostr protocol and the encryption.
 Mismeet uses no authentication, payment, analytics, advertising or AI service, and has no server of its own. From build 19, problem reports the user turns on go encrypted over the same Nostr relays to the developer's own key.

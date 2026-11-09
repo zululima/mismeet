@@ -18,12 +18,13 @@ import org.nostrdevkit.sdk.SendEventTarget
 /**
  * Asks each relay on its own what it does with Mismeet's events from a new key: whether it
  * takes a relay list and a location event, keeps it, replaces it with one published a few seconds
- * later as the app does after a contact change, and serves the newest back. Prints each relay's
+ * later as the app does after a contact change, and serves the newest back, and whether it serves
+ * a kind 1059 add-back request by `#p` to a reader that does not authenticate. Prints each relay's
  * `OK` message, which the apps log only when every relay refuses. Run through the relayProbe
  * Gradle task, with relays as arguments or none for the defaults.
  */
 fun main(args: Array<String>) = runBlocking {
-    val relays = args.toList().ifEmpty { listOf("wss://relay.damus.io", "wss://nos.lol", "wss://relay.primal.net") }
+    val relays = args.toList().ifEmpty { listOf("wss://relay.damus.io", "wss://relay.nostr.net", "wss://relay.primal.net") }
     for (relay in relays) probe(relay)
 }
 
@@ -60,6 +61,12 @@ private suspend fun probe(relay: String) {
         println("served back: ${served.size} location event(s), created_at ${served.map { it.createdAt().asSecs() }}, newest published $previous")
         val lists = fetch(client, url, Filter().kinds(listOf(Kind(ProtocolConstants.RELAY_LIST_KIND))).authors(listOf(publisher.publicKey())))
         println("served back: ${lists.size} relay list(s)")
+        val receiver = Keys.generate()
+        now = System.currentTimeMillis() / 1000
+        send(client, "add-back request", AddBackRequest.wrap(Invite(publisher.publicKey(), listOf(url)), "Probe", publisher, receiver.publicKey(), now))
+        delay(2000)
+        val wraps = fetch(client, url, Filter().kinds(listOf(Kind(ProtocolConstants.GIFT_WRAP_KIND))).pubkey(receiver.publicKey()))
+        println("served back by #p without AUTH: ${wraps.size} add-back request(s)")
     } finally {
         client.shutdown()
     }

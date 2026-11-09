@@ -78,7 +78,7 @@ object ProblemReports {
             }
             appendLine()
             appendLine(
-                "Contacts: ${contacts.size}, sharing with ${contacts.count { it.share }}, " +
+                "Contacts: ${contacts.size}, sharing with ${contacts.count { it.sharesAt(System.currentTimeMillis()) }}, " +
                     "${contacts.count { it.sharing == Contact.SharingStatus.SHARING }} share back, " +
                     "${contacts.count { it.sharing == Contact.SharingStatus.NOT_SHARING }} do not, " +
                     "${contacts.count { it.sharing == Contact.SharingStatus.UNKNOWN }} not found yet; " +

@@ -5,7 +5,10 @@ import app.mismeet.protocol.AddBackRequest
 import app.mismeet.protocol.Invite
 import app.mismeet.protocol.LocationFix
 import app.mismeet.protocol.LocationPayload
+import app.mismeet.protocol.ProtocolConstants
 import java.io.File
+import java.time.Instant
+import java.time.ZoneId
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.nostrdevkit.sdk.PublicKey
@@ -18,6 +21,8 @@ data class Contact(
     val name: String,
     val relays: List<String>,
     val share: Boolean = true,
+    /** When a share for a limited time ends, in milliseconds; null shares until switched off. */
+    val shareEndsAt: Long? = null,
     val addedAt: Long,
     val sharing: SharingStatus = SharingStatus.UNKNOWN,
     val lastPayload: LocationPayload? = null,
@@ -32,6 +37,9 @@ data class Contact(
     enum class SharingStatus { UNKNOWN, SHARING, NOT_SHARING }
 
     fun publicKey(): PublicKey? = runCatching { PublicKey.parse(id) }.getOrNull()
+
+    /** Whether an event published at [millis] includes this contact, spec section 8.3. */
+    fun sharesAt(millis: Long): Boolean = share && (shareEndsAt == null || millis < shareEndsAt)
 
     /** The relays to ask about this contact: its own, or the app's list until a kind 10002 is seen. */
     fun queryRelays(defaults: List<String>): List<RelayUrl> =
@@ -61,8 +69,41 @@ data class PersistedState(
     /** The last automatic report, which the daily limit counts from. */
     val lastReportAt: Long? = null,
 ) {
+    /**
+     * Spec section 7.4: nos.lol no longer accepts events, so relay.nostr.net takes its place, and
+     * the relay list counts as unpublished until the new one goes out.
+     */
+    fun replacingRetiredRelay(): PersistedState {
+        if (RETIRED_RELAY !in relays) return this
+        return copy(relays = relays.map { if (it == RETIRED_RELAY) REPLACEMENT_RELAY else it }.distinct(), relayListPublishedAt = null)
+    }
+
     companion object {
-        val DEFAULT_RELAYS = listOf("wss://relay.damus.io", "wss://nos.lol", "wss://relay.primal.net")
+        val DEFAULT_RELAYS = listOf("wss://relay.damus.io", "wss://relay.nostr.net", "wss://relay.primal.net")
+        private const val RETIRED_RELAY = "wss://nos.lol"
+        private const val REPLACEMENT_RELAY = "wss://relay.nostr.net"
+    }
+}
+
+/** The answers of the share question, spec section 4.2. */
+enum class ShareDuration {
+    HOUR,
+    END_OF_DAY,
+    INDEFINITELY;
+
+    /** When a share given at [now] ends, in milliseconds, or null when it does not end. */
+    fun endsAt(now: Long, zone: ZoneId = ZoneId.systemDefault()): Long? = when (this) {
+        HOUR -> now + ProtocolConstants.LIMITED_SHARE_SECONDS * 1000
+        END_OF_DAY -> Instant.ofEpochMilli(now).atZone(zone).toLocalDate().plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
+        INDEFINITELY -> null
+    }
+
+    companion object {
+        /** Whether [millis] is the start of a day in [zone], as the end of a share until the end of the day is. */
+        fun isStartOfDay(millis: Long, zone: ZoneId = ZoneId.systemDefault()): Boolean {
+            val local = Instant.ofEpochMilli(millis).atZone(zone)
+            return local.toLocalDate().atStartOfDay(zone).toInstant().toEpochMilli() == millis
+        }
     }
 }
 
@@ -106,10 +147,11 @@ class StateStore(private val file: File) {
             savesBlocked = true
             return PersistedState()
         }
-        return runCatching { json.decodeFromString(PersistedState.serializer(), text) }.getOrElse {
+        val state = runCatching { json.decodeFromString(PersistedState.serializer(), text) }.getOrElse {
             savesBlocked = !file.renameTo(File(file.parentFile, "state-unreadable-${System.currentTimeMillis()}.json"))
-            PersistedState()
+            return PersistedState()
         }
+        return state.replacingRetiredRelay()
     }
 
     fun save(state: PersistedState) {

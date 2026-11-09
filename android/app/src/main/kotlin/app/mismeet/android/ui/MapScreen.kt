@@ -58,6 +58,7 @@ import androidx.lifecycle.compose.LifecycleStartEffect
 import app.mismeet.android.AppModel
 import app.mismeet.android.R
 import app.mismeet.android.location.Countries
+import app.mismeet.android.shareUntil
 import app.mismeet.android.store.Contact
 import app.mismeet.protocol.EstimateResult
 import app.mismeet.protocol.LatLon
@@ -91,8 +92,8 @@ import org.osmdroid.views.overlay.Polyline
  * at the bottom right returns there, a second tap widens to everyone, abroad included, and the
  * arrow below it centres on this phone, as the two buttons of Find My do. The contact list is
  * a sheet over the map, peeking at about a third of the screen as Find My's does, and the
- * [focused] contact, tapped in it or on the map, is framed with its card in the sheet until it is
- * closed.
+ * [focused] contact, tapped in it or on the map, has its card in the sheet until it is closed and
+ * is framed while its position is known.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,7 +121,7 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
     val everyone = points(located, own, estimates) { true }
     val nearby = points(located, own, estimates, inHome).ifEmpty { everyone }
     val someoneAbroad = nearby.size != everyone.size
-    val focusedContact = located.firstOrNull { it.id == focused }
+    val focusedContact = state.contacts.firstOrNull { it.id == focused }
     val focusKey = focusedContact?.lastPayload?.let { "${focusedContact.id}:${it.latitude},${it.longitude},${it.accuracy}" }
     val peek = (LocalConfiguration.current.screenHeightDp * PEEK_FRACTION).dp
     val sheet = rememberStandardBottomSheetState(
@@ -192,6 +193,8 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
             if (contact == null) {
                 ContactList(model, onFocus, Modifier.fillMaxHeight(LIST_HEIGHT).onSizeChanged { listPixels = it.height })
             } else {
+                var askingShare by remember(contact.id) { mutableStateOf(false) }
+                val sharing = state.sharingEnabled && contact.share
                 Column(
                     Modifier.fillMaxWidth().height(peek).padding(start = 16.dp, end = 8.dp, bottom = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -204,16 +207,27 @@ fun MapScreen(model: AppModel, focused: String?, onFocus: (String) -> Unit, onUn
                         }
                         IconButton(onClick = onUnfocus) { Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.close)) }
                     }
-                    Row(Modifier.padding(end = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Button(onClick = { openMap(context, contact) }) { Text(stringResource(R.string.directions)) }
-                        distance(context, contact, state)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
-                    }
-                    if (state.sharingEnabled) {
-                        Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.share_my_location), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-                            Switch(checked = contact.share, onCheckedChange = { model.setShare(contact.id, it) })
+                    if (contact.lastPayload != null) {
+                        Row(Modifier.padding(end = 8.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Button(onClick = { openMap(context, contact) }) { Text(stringResource(R.string.directions)) }
+                            distance(context, contact, state)?.let { Text(it, style = MaterialTheme.typography.bodyMedium) }
                         }
                     }
+                    Row(Modifier.fillMaxWidth().padding(end = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.share_my_location), style = MaterialTheme.typography.bodyLarge)
+                            contact.shareEndsAt?.takeIf { sharing }?.let {
+                                Text(shareUntil(context, it), style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        Switch(checked = sharing, onCheckedChange = { on -> if (on) askingShare = true else model.setShare(contact.id, false) })
+                    }
+                }
+                if (askingShare) {
+                    ShareQuestion(contact, onAnswer = { duration ->
+                        askingShare = false
+                        duration?.let { model.shareWith(contact.id, it) }
+                    })
                 }
             }
         },

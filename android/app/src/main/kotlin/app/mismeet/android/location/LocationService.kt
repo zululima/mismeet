@@ -20,6 +20,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
@@ -40,7 +43,18 @@ class LocationService : Service() {
         if (loop == null) {
             loop = scope.launch {
                 val model = AppModel.get(applicationContext)
+                // Ends the soonest limited share on time rather than at the next tick, spec section 8.3.
+                launch {
+                    model.state.map { state -> state.contacts.filter { it.share }.mapNotNull { it.shareEndsAt }.minOrNull() }
+                        .distinctUntilChanged()
+                        .collectLatest { end ->
+                            if (end == null) return@collectLatest
+                            while (System.currentTimeMillis() < end) delay(end - System.currentTimeMillis())
+                            model.endPassedShares()
+                        }
+                }
                 while (isActive) {
+                    model.endPassedShares()
                     model.publishFresh(AppModel.Trigger.TIMER)
                     delay(ProtocolConstants.ANDROID_PUBLISH_INTERVAL_SECONDS * 1000)
                 }

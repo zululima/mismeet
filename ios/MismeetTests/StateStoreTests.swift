@@ -30,7 +30,9 @@ final class StateStoreTests: XCTestCase {
         XCTAssertEqual(contact.lastPayload?.battery, 0.5)
         XCTAssertEqual(contact.lastCreatedAt, 1_761_379_120)
         XCTAssertEqual(contact.photoSetAt, Date(timeIntervalSinceReferenceDate: 783_072_100))
+        XCTAssertNil(contact.shareUntil)
         XCTAssertEqual(state.relays, PersistedState.defaultRelays)
+        XCTAssertNil(state.relayListPublishedAt)
         XCTAssertEqual(state.lastFix?.horizontalAccuracy, 8)
         XCTAssertNil(state.lastFix?.speed)
         XCTAssertTrue(state.sharingEnabled)
@@ -51,11 +53,31 @@ final class StateStoreTests: XCTestCase {
         let text = #"{"contacts":"not a list"}"#
         let store = try store(text)
         XCTAssertTrue(store.load().contacts.isEmpty)
-        store.save(PersistedState(relays: ["wss://nos.lol"]))
+        store.save(PersistedState(relays: ["wss://relay.example.org"]))
         let names = try FileManager.default.contentsOfDirectory(atPath: directory.path)
         let aside = try XCTUnwrap(names.first { $0.hasPrefix("state-unreadable-") })
         XCTAssertEqual(try String(contentsOf: directory.appendingPathComponent(aside), encoding: .utf8), text)
-        XCTAssertEqual(store.load().relays, ["wss://nos.lol"])
+        XCTAssertEqual(store.load().relays, ["wss://relay.example.org"])
+    }
+
+    func testReplacesARelayThatStoppedWorkingOnce() throws {
+        let state = try store(#"{"relays":["wss://nos.lol","wss://relay.nostr.net","wss://relay.example.org"],"relayListPublishedAt":1}"#).load()
+        XCTAssertEqual(state.relays, ["wss://relay.nostr.net", "wss://relay.example.org"])
+        XCTAssertNil(state.relayListPublishedAt)
+        let kept = try store(#"{"relays":["wss://relay.example.org","wss://relay.nostr.net"],"relayListPublishedAt":1}"#).load()
+        XCTAssertNotNil(kept.relayListPublishedAt)
+    }
+
+    func testAShareEndsAtItsEndTime() {
+        var contact = Contact(id: Self.id, name: "Aino", relays: [], addedAt: Date())
+        let end = Date(timeIntervalSinceReferenceDate: 800_000_000)
+        contact.shareUntil = end
+        XCTAssertTrue(contact.shares(at: end.addingTimeInterval(-1)))
+        XCTAssertFalse(contact.shares(at: end))
+        contact.shareUntil = nil
+        XCTAssertTrue(contact.shares(at: end))
+        contact.share = false
+        XCTAssertFalse(contact.shares(at: end.addingTimeInterval(-1)))
     }
 
     private static let id = "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798"

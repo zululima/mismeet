@@ -24,7 +24,7 @@ import org.nostrdevkit.sdk.SendEventTarget
  * and reads them back.
  */
 class RelayIntegrationTest {
-    private val relayUrls = listOf("wss://relay.damus.io", "wss://nos.lol", "wss://relay.primal.net")
+    private val relayUrls = listOf("wss://relay.damus.io", "wss://relay.nostr.net", "wss://relay.primal.net")
 
     private suspend fun connectedClient(): Client {
         val client = ClientBuilder().connectTimeout(Duration.ofSeconds(ProtocolConstants.CONNECT_TIMEOUT_SECONDS)).build()

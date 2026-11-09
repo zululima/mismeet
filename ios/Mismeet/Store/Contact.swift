@@ -11,6 +11,8 @@ struct Contact: Codable, Identifiable, Equatable {
     var name: String
     var relays: [String]
     var share = true
+    /// When a share given for a limited time ends, spec section 8.3; nil shares until switched off.
+    var shareUntil: Date?
     var addedAt: Date
     var sharing = SharingStatus.unknown
     var lastPayload: LocationPayload?
@@ -24,6 +26,10 @@ struct Contact: Codable, Identifiable, Equatable {
 
     var publicKey: PublicKey? {
         try? PublicKey.parse(publicKey: id)
+    }
+
+    func shares(at now: Date) -> Bool {
+        share && (shareUntil.map { $0 > now } ?? true)
     }
 
     /// The relays to ask about this contact: its own, or the app's list until a kind 10002 is seen.
@@ -42,6 +48,7 @@ extension Contact {
         name = try container.decode(String.self, forKey: .name)
         relays = try container.decode([String].self, forKey: .relays)
         share = try container.decodeIfPresent(Bool.self, forKey: .share) ?? true
+        shareUntil = try container.decodeIfPresent(Date.self, forKey: .shareUntil)
         addedAt = try container.decode(Date.self, forKey: .addedAt)
         sharing = try container.decodeIfPresent(SharingStatus.self, forKey: .sharing) ?? .unknown
         lastPayload = try container.decodeIfPresent(LocationPayload.self, forKey: .lastPayload)

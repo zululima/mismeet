@@ -16,7 +16,7 @@ enum ProtocolConstants {
     static let reportIntervalSeconds: TimeInterval = 86_400
     static let reportLogLines = 50
     static let reportsPublicKey = "1300350a75a59a37e42c4e34f788aa863c96eee9386ba68a39d2f6ee20e9b792"
-    static let reportRelays = ["wss://nos.lol", "wss://relay.primal.net"]
+    static let reportRelays = ["wss://relay.nostr.net", "wss://relay.primal.net"]
     static let identifier = "location"
     static let contentVersion = 1
     static let payloadVersion = 1
@@ -29,6 +29,9 @@ enum ProtocolConstants {
     static let relayListRefreshSeconds: UInt64 = 86_400
     static let publishThrottleSeconds: TimeInterval = 60
     static let maxFixAgeSeconds: TimeInterval = 3_600
+    static let regionRadiusMetres: Double = 150
+    static let backgroundRefreshSeconds: TimeInterval = 14_400
+    static let shareHourSeconds: TimeInterval = 3_600
     static let foregroundFetchIntervalSeconds: TimeInterval = 60
     static let connectTimeoutSeconds: TimeInterval = 5
     static let okTimeoutSeconds: TimeInterval = 10

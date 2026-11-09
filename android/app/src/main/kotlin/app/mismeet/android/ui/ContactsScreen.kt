@@ -27,7 +27,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -52,6 +51,7 @@ import app.mismeet.android.ago
 import app.mismeet.android.measure
 import app.mismeet.android.store.Contact
 import app.mismeet.android.store.PersistedState
+import app.mismeet.android.store.ShareDuration
 import app.mismeet.android.store.StoredRequest
 import app.mismeet.protocol.LocationPayload
 import app.mismeet.protocol.ProtocolConstants
@@ -132,7 +132,6 @@ fun ContactList(model: AppModel, onFocus: (String) -> Unit, modifier: Modifier =
                     photo = model.photo(contact),
                     onFocus = { onFocus(contact.id) },
                     onPhoto = { if (contact.photoSetAt == null) choosePhoto(contact.id) else photoFor = contact },
-                    onShare = if (state.sharingEnabled) ({ model.setShare(contact.id, it) }) else null,
                     onRemove = { model.removeContact(contact.id) },
                     onOpenMap = { openMap(context, contact) },
                 )
@@ -209,14 +208,21 @@ private fun NameQuestion(current: String, onAnswer: (String?) -> Unit) {
     )
 }
 
+/** Whether to share with [contact], and how long, spec section 4.2; null answers not now. */
 @Composable
-private fun ShareQuestion(contact: Contact, onAnswer: (Boolean) -> Unit) {
+fun ShareQuestion(contact: Contact, onAnswer: (ShareDuration?) -> Unit) {
     AlertDialog(
-        onDismissRequest = { onAnswer(false) },
+        onDismissRequest = { onAnswer(null) },
         title = { Text(stringResource(R.string.share_question_title, contact.name)) },
         text = { Text(stringResource(R.string.share_question_text, contact.name)) },
-        confirmButton = { TextButton(onClick = { onAnswer(true) }) { Text(stringResource(R.string.share)) } },
-        dismissButton = { TextButton(onClick = { onAnswer(false) }) { Text(stringResource(R.string.not_now)) } },
+        confirmButton = {
+            Column(horizontalAlignment = Alignment.End) {
+                TextButton(onClick = { onAnswer(ShareDuration.HOUR) }) { Text(stringResource(R.string.share_for_hour)) }
+                TextButton(onClick = { onAnswer(ShareDuration.END_OF_DAY) }) { Text(stringResource(R.string.share_until_end_of_day)) }
+                TextButton(onClick = { onAnswer(ShareDuration.INDEFINITELY) }) { Text(stringResource(R.string.share_indefinitely)) }
+                TextButton(onClick = { onAnswer(null) }) { Text(stringResource(R.string.not_now)) }
+            }
+        },
     )
 }
 
@@ -247,11 +253,10 @@ private fun ContactRow(
     photo: Bitmap?,
     onFocus: () -> Unit,
     onPhoto: () -> Unit,
-    onShare: ((Boolean) -> Unit)?,
     onRemove: () -> Unit,
     onOpenMap: () -> Unit,
 ) {
-    Card(Modifier.fillMaxWidth().clip(CardDefaults.shape).clickable(enabled = contact.lastPayload != null, onClick = onFocus)) {
+    Card(Modifier.fillMaxWidth().clip(CardDefaults.shape).clickable(onClick = onFocus)) {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                 Avatar(contact, photo, 48.dp, Modifier.size(48.dp).clickable(onClick = onPhoto))
@@ -260,7 +265,6 @@ private fun ContactRow(
                     Text(status(LocalContext.current, contact, place), style = MaterialTheme.typography.bodySmall)
                 }
                 if (distance != null) Text(distance, style = MaterialTheme.typography.bodyMedium)
-                if (onShare != null) Switch(checked = contact.share, onCheckedChange = onShare)
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (contact.lastPayload != null) TextButton(onClick = onOpenMap) { Text(stringResource(R.string.open_in_map)) }

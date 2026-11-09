@@ -1,7 +1,9 @@
 import Foundation
 
 struct PersistedState: Codable, Equatable {
-    static let defaultRelays = ["wss://relay.damus.io", "wss://nos.lol", "wss://relay.primal.net"]
+    static let defaultRelays = ["wss://relay.damus.io", "wss://relay.nostr.net", "wss://relay.primal.net"]
+    /// Default relays that stopped working, each with the one that took its place, spec section 7.4.
+    static let replacedRelays = ["wss://nos.lol": "wss://relay.nostr.net"]
 
     var contacts: [Contact] = []
     var relays = PersistedState.defaultRelays
@@ -59,6 +61,13 @@ extension PersistedState {
         lastPublishedAt = try container.decodeIfPresent(Date.self, forKey: .lastPublishedAt)
         lastFix = try container.decodeIfPresent(LocationFix.self, forKey: .lastFix)
         relayListPublishedAt = try container.decodeIfPresent(Date.self, forKey: .relayListPublishedAt)
+        if relays.contains(where: { PersistedState.replacedRelays[$0] != nil }) {
+            relays = relays.reduce(into: []) { list, url in
+                let current = PersistedState.replacedRelays[url] ?? url
+                if !list.contains(current) { list.append(current) }
+            }
+            relayListPublishedAt = nil
+        }
         // Before the switch existed, a phone that had published a location was sharing.
         sharingEnabled = try container.decodeIfPresent(Bool.self, forKey: .sharingEnabled) ?? (lastPublishedCreatedAt != nil)
         lastShareFailure = try container.decodeIfPresent(ShareFailure.self, forKey: .lastShareFailure)

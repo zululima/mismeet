@@ -1,5 +1,6 @@
 import CoreLocation
 import Foundation
+import UIKit
 
 /// The setup checks of the Check setup screen, which problem reports repeat.
 @MainActor
@@ -88,13 +89,21 @@ enum SetupChecks {
                 fix: (t("Open Settings"), openSettings)
             ))
         }
+        if UIApplication.shared.backgroundRefreshStatus != .available {
+            checks.append(Check(
+                title: t("Background App Refresh"), outcome: .warning,
+                detail: t("Off: an iPhone that stays in one place may share nothing for a day, and its contacts then see no location."),
+                fix: (t("Open Settings"), openSettings)
+            ))
+        }
         if ProcessInfo.processInfo.isLowPowerModeEnabled {
             checks.append(Check(
                 title: t("Low Power Mode"), outcome: .warning,
                 detail: t("On: iOS cuts background work, which can delay sharing.")
             ))
         }
-        let sharingWith = state.contacts.filter(\.share).count
+        let now = Date()
+        let sharingWith = state.contacts.filter { $0.shares(at: now) }.count
         checks.append(sharingWith == 0
             ? Check(title: t("Sharing with"), outcome: .warning, detail: t("Nobody: add a contact, or turn sharing on in a contact's card."))
             : Check(title: t("Sharing with"), outcome: .ok, detail: t("\(sharingWith) contacts")))
@@ -103,7 +112,7 @@ enum SetupChecks {
         } else if let at = state.lastPublishedAt {
             checks.append(Check(
                 title: t("Last share"), outcome: .ok,
-                detail: t("\(language.ago(at).capitalizedFirst). An iPhone shares when it has moved about 500 m and when Mismeet opens.")
+                detail: t("\(language.ago(at).capitalizedFirst). An iPhone shares when it has moved about 150 m, when Mismeet opens and now and then while it stays in place.")
             ))
         } else {
             checks.append(Check(title: t("Last share"), outcome: .warning, detail: t("Not yet")))

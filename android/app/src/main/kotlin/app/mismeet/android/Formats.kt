@@ -8,6 +8,7 @@ import android.icu.text.RelativeDateTimeFormatter
 import android.icu.util.Measure
 import android.icu.util.MeasureUnit
 import android.text.format.DateUtils
+import app.mismeet.android.store.ShareDuration
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
@@ -42,3 +43,11 @@ fun measure(context: Context, value: Number, unit: MeasureUnit, decimals: Int = 
     }
     return MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.SHORT, numbers).format(Measure(value, unit))
 }
+
+/** When a limited share ends, such as "Until 14:30", or "Until end of day" for one that ends at local midnight. */
+fun shareUntil(context: Context, endsAt: Long): String =
+    if (ShareDuration.isStartOfDay(endsAt)) {
+        context.getString(R.string.shared_until_end_of_day)
+    } else {
+        context.getString(R.string.shared_until, android.text.format.DateFormat.getTimeFormat(context).format(Date(endsAt)))
+    }

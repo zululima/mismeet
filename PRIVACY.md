@@ -29,10 +29,10 @@ notification shows while it runs.
 
 When you look at your contacts, the app asks those relays for their latest events.
 
-The relays are run by third parties under their own terms. The app uses relay.damus.io, nos.lol
-and relay.primal.net. A relay can see your public key, when you publish, your IP address,
-roughly how many contacts you share with (rounded up to 4, 8, 16, 32 or 64) and, when you
-fetch, which public keys you ask about. Section 9 of the
+The relays are run by third parties under their own terms. The app uses relay.damus.io,
+relay.nostr.net and relay.primal.net. A relay can see your public key, when you publish, your
+IP address, roughly how many contacts you share with (rounded up to 4, 8, 16, 32 or 64) and,
+when you fetch, which public keys you ask about. Section 9 of the
 [protocol specification](spec/SPEC.md) describes this in detail.
 
 ## Problem reports
@@ -49,7 +49,7 @@ contacts. A report never holds your location, a place name, a contact's name or 
 key or a photo.
 
 The report is encrypted for the developer's reports key alone (NIP-17) and sent from a key made
-for that one report, to the relays nos.lol and relay.primal.net, which delete it after 30 days.
+for that one report, to the relays relay.nostr.net and relay.primal.net, which delete it after 30 days.
 Neither the relays nor the developer can tell from the report whose phone sent it; the relays
 see your IP address. The developer keeps reports to fix bugs and shares them with nobody.
 
@@ -90,7 +90,8 @@ for a contact is stored on your phone only and is never sent.
 ## Stopping and removing
 
 Switching sharing off for a contact, or removing the contact, publishes a replacement event
-without them at once. Contacts keep what they already saw. Events left on relays expire after
+without them at once. A share for one hour or until the end of the day ends at that time: no
+later event includes the contact, and the app publishes the replacement the next time it runs. Contacts keep what they already saw. Events left on relays expire after
 24 hours.
 
 ## Contact

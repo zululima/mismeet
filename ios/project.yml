@@ -13,7 +13,7 @@ packages:
 settings:
   base:
     MARKETING_VERSION: "0.3.0"
-    CURRENT_PROJECT_VERSION: "21"
+    CURRENT_PROJECT_VERSION: "22"
     SWIFT_VERSION: "6.0"
     CODE_SIGN_STYLE: Automatic
     TARGETED_DEVICE_FAMILY: "1"
@@ -35,7 +35,8 @@ targets:
         UILaunchScreen: {}
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIRequiresFullScreen: true
-        UIBackgroundModes: [location]
+        UIBackgroundModes: [location, fetch]
+        BGTaskSchedulerPermittedIdentifiers: [app.mismeet.ios.refresh]
         NSLocationWhenInUseUsageDescription: Mismeet shows your location to the contacts you choose.
         NSLocationAlwaysAndWhenInUseUsageDescription: Mismeet keeps your contacts updated also while the app is not open.
         NSCameraUsageDescription: Mismeet scans the invite QR code of a contact.

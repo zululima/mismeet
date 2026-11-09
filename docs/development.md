@@ -294,9 +294,10 @@ which tells the Android phone whose events to fetch once it adds the iPhone back
    on the map, framed around everyone with a known position in the phone's own country. After
    panning, the people button at the bottom right frames that view again; with someone abroad,
    the same button in that view widens it to them too.
-4. Walk a few hundred metres with the iPhone, or drive. Significant location changes wake the
-   app and the Android row's "Seen" time moves. Pulling the contact list down on the iPhone, once
-   it is pulled up over the map, refreshes its own view; "Share now" under Me > Check setup
-   forces a share.
-5. To check revocation, switch "Share my location" off for the contact on the iPhone: the next
-   refresh on the Android phone shows "no longer sharing", with the last position kept.
+4. Walk a few hundred metres with the iPhone, or drive. Leaving the 150 m region around the
+   last fix wakes the app and the Android row's "Seen" time moves. Pulling the contact list
+   down on the iPhone, once it is pulled up over the map, refreshes its own view; "Share now"
+   under Me > Check setup forces a share.
+5. To check revocation, tap the contact on the iPhone and switch "Share my location" off in
+   its card: the next refresh on the Android phone shows "no longer sharing", with the last
+   position kept. Switching it on again asks for how long; "Share for one hour" ends by itself.

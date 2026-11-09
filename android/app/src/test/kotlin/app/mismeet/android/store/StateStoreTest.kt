@@ -26,6 +26,7 @@ class StateStoreTest {
         assertEquals("Aino", contact.name)
         assertEquals(listOf("wss://nos.lol"), contact.relays)
         assertFalse(contact.share)
+        assertNull(contact.shareEndsAt)
         assertEquals(Contact.SharingStatus.SHARING, contact.sharing)
         assertEquals(60.1699, contact.lastPayload!!.latitude, 0.0)
         assertEquals(0.5, contact.lastPayload!!.battery!!, 0.0)
@@ -43,8 +44,38 @@ class StateStoreTest {
     fun fillsInFieldsAnOlderFileLacks() {
         val contact = store("""{"contacts":[{"id":"$ID","name":"Eero","relays":[],"addedAt":1}]}""").first.load().contacts.single()
         assertTrue(contact.share)
+        assertNull(contact.shareEndsAt)
         assertEquals(Contact.SharingStatus.UNKNOWN, contact.sharing)
         assertNull(contact.photoSetAt)
+    }
+
+    @Test
+    fun replacesNosLolInTheOwnRelayListAndPublishesItAgain() {
+        val state = store(STATE_0_1_0).first.load()
+        assertEquals(listOf("wss://relay.damus.io", "wss://relay.nostr.net", "wss://relay.primal.net"), state.relays)
+        assertNull(state.relayListPublishedAt)
+        assertEquals(listOf("wss://nos.lol"), state.contacts.single().relays)
+    }
+
+    @Test
+    fun replacesNosLolWithoutListingItsReplacementTwice() {
+        val state = store("""{"relays":["wss://relay.damus.io","wss://nos.lol","wss://relay.nostr.net"],"relayListPublishedAt":1}""").first.load()
+        assertEquals(listOf("wss://relay.damus.io", "wss://relay.nostr.net"), state.relays)
+        assertNull(state.relayListPublishedAt)
+    }
+
+    @Test
+    fun keepsARelayListWithoutNosLolPublished() {
+        val state = store("""{"relays":["wss://relay.damus.io","wss://relay.primal.net"],"relayListPublishedAt":1}""").first.load()
+        assertEquals(listOf("wss://relay.damus.io", "wss://relay.primal.net"), state.relays)
+        assertEquals(1L, state.relayListPublishedAt)
+    }
+
+    @Test
+    fun keepsTheEndOfALimitedShare() {
+        val (store, _) = store(null)
+        store.save(PersistedState(contacts = listOf(Contact(ID, "Aino", emptyList(), shareEndsAt = 1_761_382_600_000L, addedAt = 1))))
+        assertEquals(1_761_382_600_000L, store.load().contacts.single().shareEndsAt)
     }
 
     @Test

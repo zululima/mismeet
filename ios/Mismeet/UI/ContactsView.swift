@@ -124,10 +124,9 @@ struct ContactList: View {
                 isPresented: $askingShare,
                 presenting: model.shareQuestion
             ) { _ in
-                Button("Not now", role: .cancel) { model.answerShareQuestion(share: false) }
-                Button("Share") { model.answerShareQuestion(share: true) }
+                shareLengthButtons { model.answerShareQuestion($0) }
             } message: { contact in
-                Text("\(contact.name) sees where you are until you turn it off in their card.")
+                Text("\(contact.name) sees where you are for as long as you choose. You can stop it in their card.")
             }
         }
     }
@@ -141,6 +140,16 @@ struct ContactList: View {
             askingShare = true
         }
     }
+}
+
+/// The answers of spec section 4.2, asked after adding a contact and when sharing is switched on
+/// in a contact's card; nil is not now.
+@MainActor @ViewBuilder
+func shareLengthButtons(_ answer: @escaping @MainActor (ShareLength?) -> Void) -> some View {
+    Button("Share for one hour") { answer(.hour) }
+    Button("Share until end of day") { answer(.endOfDay) }
+    Button("Share indefinitely") { answer(.indefinitely) }
+    Button("Not now", role: .cancel) { answer(nil) }
 }
 
 /// An add-back request, spec section 4.5: someone who added this phone's user asks to be added back.
@@ -192,7 +201,7 @@ struct ContactRow: View {
                 }
             }
             Button {
-                if contact.lastPayload != nil { focus(contact.id) }
+                focus(contact.id)
             } label: {
                 HStack {
                     VStack(alignment: .leading, spacing: 1) {
@@ -209,13 +218,6 @@ struct ContactRow: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            if model.state.sharingEnabled {
-                Toggle("Share my location", isOn: Binding(
-                    get: { contact.share },
-                    set: { model.setShare(contact.id, $0) }
-                ))
-                .labelsHidden()
-            }
         }
         .onChange(of: pickedPhoto) { _, item in
             guard let item else { return }

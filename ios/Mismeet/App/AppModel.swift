@@ -1,3 +1,4 @@
+import BackgroundTasks
 import CoreLocation
 import Foundation
 import ImageIO
@@ -12,8 +13,10 @@ final class AppModel {
     static let shared = AppModel()
 
     enum PublishTrigger {
-        case wakeup, foreground, manual, contactsChanged
+        case wakeup, refresh, foreground, manual, contactsChanged
     }
+
+    static let refreshTaskIdentifier = "app.mismeet.ios.refresh"
 
     private(set) var state: PersistedState
     /// Why an action the user took did not happen, shown in an alert until dismissed.
@@ -41,6 +44,10 @@ final class AppModel {
     private let relays = RelayService()
     private let logger = Logger(subsystem: "app.mismeet.ios", category: "model")
     private var pendingTrigger: PublishTrigger?
+    /// Keeps a background launch alive until the fix it asked for arrives.
+    @ObservationIgnored private var fixTask: BackgroundTask?
+    @ObservationIgnored private var refreshTask: BGAppRefreshTask?
+    @ObservationIgnored private var shareEndTimer: Task<Void, Never>?
     @ObservationIgnored private var photos: [String: (setAt: Date, image: UIImage)] = [:]
 
     private init() {
@@ -59,11 +66,20 @@ final class AppModel {
         if let startupProblem { log(startupProblem) }
         location.onFix = { [weak self] fix in self?.handle(fix: fix) }
         location.onFailure = { [weak self] error in
-            guard let self, self.pendingTrigger != nil else { return }
+            guard let self, let trigger = self.pendingTrigger else { return }
             self.pendingTrigger = nil
+            self.fixTask?.end()
+            self.fixTask = nil
+            if trigger == .refresh { self.finishRefresh(false) }
             self.log("No fix: \(error)")
             self.shareFailed("Could not get a position")
         }
+        location.onRegionExit = { [weak self] in
+            guard let self, self.state.sharingEnabled else { return }
+            self.log("Left the region around the last fix")
+            self.requestFix(.wakeup)
+        }
+        location.onRegionFailure = { [weak self] error in self?.log("Region monitoring failed: \(error)") }
         location.onAuthorizationChange = { [weak self] status in
             self?.authorization = status
             self?.preciseLocation = self?.location.preciseLocation ?? true
@@ -85,6 +101,8 @@ final class AppModel {
         if state.sharingEnabled, state.relayListPublishedAt == nil {
             Task { await publishRelayList() }
         }
+        endPassedShares()
+        scheduleRefresh()
         #if DEBUG
         // Test hook: `SIMCTL_CHILD_MISMEET_TEST_INVITES="uri;name|uri" xcrun simctl launch ...` adds contacts
         // and shares with them without asking.
@@ -149,6 +167,7 @@ final class AppModel {
     // MARK: Lifecycle
 
     func becameActive() {
+        endPassedShares()
         Task { await refresh() }
         if state.sharingEnabled, authorization == .authorizedAlways || authorization == .authorizedWhenInUse {
             pendingTrigger = .foreground
@@ -181,6 +200,7 @@ final class AppModel {
             location.stopMonitoring()
             recipientsChanged()
         }
+        scheduleRefresh()
     }
 
     // MARK: Contacts
@@ -203,14 +223,18 @@ final class AppModel {
         Task { await refresh() }
     }
 
-    /// The answer to `shareQuestion`: sharing with the new contact turns on sharing from this
-    /// phone too, with its permission prompt, when it was off.
-    func answerShareQuestion(share: Bool) {
+    /// The answer to `shareQuestion`, nil for not now.
+    func answerShareQuestion(_ length: ShareLength?) {
         guard let id = shareQuestion?.id else { return }
         shareQuestion = nil
-        guard share else { return }
+        if let length { share(with: id, for: length) }
+    }
+
+    /// Spec section 4.2: sharing with a contact turns on sharing from this phone too, with its
+    /// permission prompt, when it was off.
+    func share(with id: String, for length: ShareLength) {
         setSharingEnabled(true)
-        setShare(id, true)
+        setShare(id, true, until: length.end(from: Date()))
     }
 
     /// Hides an add-back request for good; adding the sender from their invite still works.
@@ -288,16 +312,50 @@ final class AppModel {
             .appendingPathComponent("Mismeet/photos/\(id).jpg")
     }
 
-    func setShare(_ id: String, _ share: Bool) {
-        guard let index = state.contacts.firstIndex(where: { $0.id == id }), state.contacts[index].share != share else { return }
-        if share, state.contacts.filter(\.share).count >= ProtocolConstants.maxSharingContacts {
+    func setShare(_ id: String, _ share: Bool, until: Date? = nil) {
+        guard let index = state.contacts.firstIndex(where: { $0.id == id }) else { return }
+        let changed = state.contacts[index].share != share
+        guard changed || state.contacts[index].shareUntil != until else { return }
+        if share, changed, state.contacts.filter(\.share).count >= ProtocolConstants.maxSharingContacts {
             tell(String(localized: "Cannot share with more than \(ProtocolConstants.maxSharingContacts) contacts"))
             return
         }
         state.contacts[index].share = share
+        state.contacts[index].shareUntil = share ? until : nil
         save()
+        armShareEnd()
+        scheduleRefresh()
+        guard changed else { return }
         recipientsChanged()
         if share { Task { await sendAddBackRequests() } }
+    }
+
+    /// Spec section 8.3: a limited share ends at its end time, and the first run after it
+    /// switches the share off and publishes without the contact.
+    private func endPassedShares() {
+        let now = Date()
+        var ended = false
+        for index in state.contacts.indices where state.contacts[index].share && !state.contacts[index].shares(at: now) {
+            state.contacts[index].share = false
+            state.contacts[index].shareUntil = nil
+            ended = true
+        }
+        if ended {
+            log("A limited share ended")
+            save()
+            if state.sharingEnabled { recipientsChanged() }
+        }
+        armShareEnd()
+    }
+
+    private func armShareEnd() {
+        shareEndTimer?.cancel()
+        guard let end = state.contacts.filter(\.share).compactMap(\.shareUntil).min() else { return }
+        shareEndTimer = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(max(0, end.timeIntervalSinceNow)))
+            guard !Task.isCancelled else { return }
+            self?.endPassedShares()
+        }
     }
 
     enum ContactError: LocalizedError {
@@ -335,15 +393,66 @@ final class AppModel {
         let trigger = pendingTrigger ?? .wakeup
         pendingTrigger = nil
         state.lastFix = fix
+        location.monitorRegion(around: fix)
+        endPassedShares()
         let task = BackgroundTask(name: "publish")
+        fixTask?.end()
+        fixTask = nil
         Task {
             await publish(fix: fix, trigger: trigger)
+            if trigger == .refresh { finishRefresh(true) }
             task.end()
         }
     }
 
+    private func requestFix(_ trigger: PublishTrigger) {
+        pendingTrigger = trigger
+        if fixTask == nil { fixTask = BackgroundTask(name: "fix") }
+        location.requestFreshFix()
+    }
+
+    // MARK: Background refresh, spec section 8.1
+
+    /// Republishes a phone that stays in one place before its event expires, and ends limited
+    /// shares whose time passed while the app was not running.
+    func runRefresh(_ task: BGAppRefreshTask) {
+        finishRefresh(false)
+        refreshTask = task
+        task.expirationHandler = { [weak self] in
+            Task { @MainActor in self?.finishRefresh(false) }
+        }
+        log("Background refresh")
+        endPassedShares()
+        scheduleRefresh()
+        guard state.sharingEnabled, authorization == .authorizedAlways, !sharingRecipients().isEmpty else {
+            return finishRefresh(true)
+        }
+        requestFix(.refresh)
+    }
+
+    private func finishRefresh(_ success: Bool) {
+        refreshTask?.setTaskCompleted(success: success)
+        refreshTask = nil
+    }
+
+    private func scheduleRefresh() {
+        guard state.sharingEnabled, state.contacts.contains(where: \.share) else {
+            BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Self.refreshTaskIdentifier)
+            return
+        }
+        let heartbeat = (state.lastPublishedAt ?? Date()).addingTimeInterval(ProtocolConstants.backgroundRefreshSeconds)
+        let shareEnd = state.contacts.filter(\.share).compactMap(\.shareUntil).min() ?? heartbeat
+        let request = BGAppRefreshTaskRequest(identifier: Self.refreshTaskIdentifier)
+        request.earliestBeginDate = max(min(heartbeat, shareEnd), Date())
+        do {
+            try BGTaskScheduler.shared.submit(request)
+        } catch {
+            log("Background refresh not scheduled: \(error)")
+        }
+    }
+
     private func publish(fix: LocationFix, trigger: PublishTrigger) async {
-        if trigger == .wakeup || trigger == .foreground,
+        if trigger == .wakeup || trigger == .refresh || trigger == .foreground,
            let last = state.lastPublishedAt,
            Date().timeIntervalSince(last) < ProtocolConstants.publishThrottleSeconds {
             log("Skipped publish: published less than a minute ago")
@@ -434,6 +543,7 @@ final class AppModel {
             state.lastPublishedCreatedAt = event.createdAt().asSecs()
             state.lastPublishedAt = Date()
             save()
+            scheduleRefresh()
             log("\(what): accepted by \(result.succeeded.count) of \(state.relays.count) relays\(result.failed.isEmpty ? "" : ", refused by \(result.summary)")")
         }
     }
@@ -523,7 +633,8 @@ final class AppModel {
 
     private func sharingRecipients() -> [PublicKey] {
         guard state.sharingEnabled else { return [] }
-        return state.contacts.filter(\.share).compactMap(\.publicKey)
+        let now = Date()
+        return state.contacts.filter { $0.shares(at: now) }.compactMap(\.publicKey)
     }
 
     private func batteryLevel() -> Double? {
@@ -697,6 +808,19 @@ final class AppModel {
         #if DEBUG
         FileHandle.standardError.write(Data((text + "\n").utf8))
         #endif
+    }
+}
+
+/// The answers to the share question, spec section 4.2.
+enum ShareLength: CaseIterable {
+    case hour, endOfDay, indefinitely
+
+    func end(from now: Date, calendar: Calendar = .current) -> Date? {
+        switch self {
+        case .hour: now.addingTimeInterval(ProtocolConstants.shareHourSeconds)
+        case .endOfDay: calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: now))
+        case .indefinitely: nil
+        }
     }
 }
 

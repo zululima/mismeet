@@ -102,7 +102,7 @@ enum ProblemReports {
         let contacts = state.contacts
         out += [
             "",
-            "Contacts: \(contacts.count), sharing with \(contacts.filter(\.share).count), "
+            "Contacts: \(contacts.count), sharing with \(contacts.filter { $0.shares(at: Date()) }.count), "
                 + "\(contacts.filter { $0.sharing == .sharing }.count) share back, "
                 + "\(contacts.filter { $0.sharing == .notSharing }.count) do not, "
                 + "\(contacts.filter { $0.sharing == .unknown }.count) not found yet; "

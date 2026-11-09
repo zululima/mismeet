@@ -19,6 +19,7 @@ import app.mismeet.android.location.RoadData
 import app.mismeet.android.nostr.RelayService
 import app.mismeet.android.store.Contact
 import app.mismeet.android.store.PersistedState
+import app.mismeet.android.store.ShareDuration
 import app.mismeet.android.store.ShareFailure
 import app.mismeet.android.store.StateStore
 import app.mismeet.android.store.StoredRequest
@@ -137,6 +138,7 @@ class AppModel private constructor(private val context: Context) {
     // Lifecycle
 
     fun becameActive() {
+        endPassedShares()
         scope.launch { refresh() }
         if (_state.value.sharingEnabled && LocationProvider.hasForegroundPermission(context)) {
             scope.launch { publishFresh(Trigger.FOREGROUND) }
@@ -212,16 +214,21 @@ class AppModel private constructor(private val context: Context) {
         scope.launch { refresh() }
     }
 
-    /**
-     * The answer to [shareQuestion]: sharing with the new contact also turns on sharing from this
-     * phone when it was off, as the Me screen's switch does.
-     */
-    fun answerShareQuestion(share: Boolean) {
+    /** The answer to [shareQuestion]: how long to share with the new contact, or null for not now. */
+    fun answerShareQuestion(duration: ShareDuration?) {
         val contact = _shareQuestion.value ?: return
         _shareQuestion.value = null
-        if (!share) return
+        if (duration != null) shareWith(contact.id, duration)
+    }
+
+    /**
+     * A yes to the share question, after adding or from the contact's card: it also turns on
+     * sharing from this phone when it was off, as the Me screen's switch does, which leaves the
+     * location permission to the Me screen and the disclosure before it.
+     */
+    fun shareWith(id: String, duration: ShareDuration) {
         setSharingEnabled(true)
-        setShare(contact.id, true)
+        setShare(id, true, duration.endsAt(System.currentTimeMillis()))
     }
 
     /** Hides an add-back request for good; adding the sender from their invite still works. */
@@ -273,18 +280,34 @@ class AppModel private constructor(private val context: Context) {
 
     private fun photoFile(id: String) = File(File(context.filesDir, "photos"), "$id.jpg")
 
-    fun setShare(id: String, share: Boolean) {
+    /** Shares with a contact until [endsAt], in milliseconds or null for no end, or stops at once. */
+    fun setShare(id: String, share: Boolean, endsAt: Long? = null) {
         val current = _state.value
         val contact = current.contacts.firstOrNull { it.id == id } ?: return
-        if (contact.share == share) return
-        if (share && current.contacts.count { it.share } >= ProtocolConstants.MAX_SHARING_CONTACTS) {
+        val end = endsAt.takeIf { share }
+        if (contact.share == share && contact.shareEndsAt == end) return
+        if (share && !contact.share && current.contacts.count { it.share } >= ProtocolConstants.MAX_SHARING_CONTACTS) {
             val most = ProtocolConstants.MAX_SHARING_CONTACTS
             tell { it.resources.getQuantityString(R.plurals.notice_max_sharing, most, most) }
             return
         }
-        update { s -> s.copy(contacts = s.contacts.map { if (it.id == id) it.copy(share = share) else it }) }
+        update { s -> s.copy(contacts = s.contacts.map { if (it.id == id) it.copy(share = share, shareEndsAt = end) else it }) }
         recipientsChanged()
         if (share) scope.launch { sendAddBackRequests() }
+    }
+
+    /**
+     * Spec section 8.3: switches off each share whose end has passed and, while sharing is on,
+     * replaces the event without those contacts, as switching them off by hand does.
+     */
+    fun endPassedShares() {
+        val now = System.currentTimeMillis()
+        val passed = { contact: Contact -> contact.share && !contact.sharesAt(now) }
+        val count = _state.value.contacts.count(passed)
+        if (count == 0) return
+        update { s -> s.copy(contacts = s.contacts.map { if (passed(it)) it.copy(share = false, shareEndsAt = null) else it }) }
+        log("Ended $count limited share(s)")
+        if (_state.value.sharingEnabled) recipientsChanged()
     }
 
     // Publishing
@@ -445,8 +468,10 @@ class AppModel private constructor(private val context: Context) {
     /** Whether each of this phone's relays answers, and the location event of this phone it holds. */
     suspend fun checkRelays(): List<RelayService.RelayCheck> = relays.check(_state.value.relays, keys.publicKey())
 
-    private fun sharingRecipients(): List<PublicKey> =
-        if (_state.value.sharingEnabled) _state.value.contacts.filter { it.share }.mapNotNull { it.publicKey() } else emptyList()
+    private fun sharingRecipients(): List<PublicKey> {
+        val now = System.currentTimeMillis()
+        return if (_state.value.sharingEnabled) _state.value.contacts.filter { it.sharesAt(now) }.mapNotNull { it.publicKey() } else emptyList()
+    }
 
     private fun batteryLevel(): Double? {
         val percent = context.getSystemService(BatteryManager::class.java)
@@ -464,7 +489,8 @@ class AppModel private constructor(private val context: Context) {
             val current = _state.value
             if (!current.sharingEnabled) return
             val invite = ownInvite()
-            for (contact in current.contacts.filter { it.share && !it.addBackDone }) {
+            val now = System.currentTimeMillis()
+            for (contact in current.contacts.filter { it.sharesAt(now) && !it.addBackDone }) {
                 if (contact.sharing == Contact.SharingStatus.SHARING) {
                     addBackDone(contact.id)
                     continue

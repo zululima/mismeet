@@ -16,7 +16,7 @@ object ProtocolConstants {
     const val REPORT_INTERVAL_SECONDS = 86_400L
     const val REPORT_LOG_LINES = 50
     const val REPORTS_PUBLIC_KEY = "1300350a75a59a37e42c4e34f788aa863c96eee9386ba68a39d2f6ee20e9b792"
-    val REPORT_RELAYS = listOf("wss://nos.lol", "wss://relay.primal.net")
+    val REPORT_RELAYS = listOf("wss://relay.nostr.net", "wss://relay.primal.net")
     const val IDENTIFIER = "location"
     const val CONTENT_VERSION = 1
     const val PAYLOAD_VERSION = 1
@@ -30,6 +30,7 @@ object ProtocolConstants {
     const val PUBLISH_THROTTLE_SECONDS = 60L
     const val MAX_FIX_AGE_SECONDS = 3_600L
     const val ANDROID_PUBLISH_INTERVAL_SECONDS = 600L
+    const val LIMITED_SHARE_SECONDS = 3_600L
     const val FOREGROUND_FETCH_INTERVAL_SECONDS = 60L
     const val CONNECT_TIMEOUT_SECONDS = 5L
     const val OK_TIMEOUT_SECONDS = 10L

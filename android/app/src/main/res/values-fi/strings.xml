@@ -7,7 +7,6 @@
     <string name="dismiss">Ohita</string>
     <string name="save">Tallenna</string>
     <string name="skip">Ohita</string>
-    <string name="share">Jaa</string>
     <string name="not_now">Ei nyt</string>
     <string name="unknown">Tuntematon</string>
     <string name="just_now">juuri nyt</string>
@@ -50,7 +49,10 @@
     <string name="scan_qr_code">Skannaa QR-koodi</string>
     <string name="scan_prompt">Skannaa kutsu</string>
     <string name="share_question_title">Jaetaanko sijaintisi henkilölle %1$s?</string>
-    <string name="share_question_text">%1$s näkee sijaintisi, kunnes laitat jakamisen pois hänen kortistaan.</string>
+    <string name="share_question_text">%1$s näkee sijaintisi niin kauan kuin valitset. Voit lopettaa jakamisen hänen kortistaan.</string>
+    <string name="share_for_hour">Jaa tunniksi</string>
+    <string name="share_until_end_of_day">Jaa päivän loppuun</string>
+    <string name="share_indefinitely">Jaa toistaiseksi</string>
     <string name="name_question_title">Nimesi</string>
     <string name="name_question_text">Näytetään lisäämillesi ihmisille, jotta he tietävät, kuka pyytää lisäämään takaisin. Voit jättää sen tyhjäksi.</string>
 
@@ -63,6 +65,8 @@
     <string name="estimated_title">%1$s, arvio</string>
     <string name="estimated_snippet">Arvioitu tietä pitkin viimeisestä sijainnista</string>
     <string name="estimated_snippet_moving">Arvioitu tietä pitkin viimeisestä sijainnista, %1$s</string>
+    <string name="shared_until_end_of_day">Päivän loppuun asti</string>
+    <string name="shared_until">%1$s asti</string>
 
     <!-- Me -->
     <string name="invite_qr_code">Kutsun QR-koodi</string>

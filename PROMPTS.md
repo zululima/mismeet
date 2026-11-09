@@ -5,6 +5,13 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
+## Share for a chosen time, keep iPhones fresh and drop nos.lol
+
+2026-11-09, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**5.** (answer to: which relay replaces nos.lol, how iPhones stay fresh,    how long a share lasts, and whether the map icons change)
+> 1a 2a 3a 4a
+
 ## Compare Mismeet with the location sharing apps people know
 
 2026-11-09, commit [2b01eee](https://github.com/zululima/mismeet/commit/2b01eee5b5317fa40a91956b269a4b3ad7cbc5c0), model claude-opus-5-5, effort xhigh.

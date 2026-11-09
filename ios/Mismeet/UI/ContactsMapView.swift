@@ -48,7 +48,7 @@ struct ContactsMapView: View {
     }
 
     private var focusedContact: Contact? {
-        located.first { $0.id == focused }
+        model.state.contacts.first { $0.id == focused }
     }
 
     private var focusKey: String? {
@@ -259,11 +259,12 @@ struct ContactsMapView: View {
 }
 
 /// A focused contact in the panel, as Find My's card for a person: where and when they were seen,
-/// directions there, and whether this phone shares with them. It is as tall as the panel's middle
-/// height, so the map keeps the same space above it.
+/// directions there, and whether and until when this phone shares with them. It is as tall as the
+/// panel's middle height, so the map keeps the same space above it.
 private struct ContactCard: View {
     @Environment(AppModel.self) private var model
     @Environment(\.openURL) private var openURL
+    @State private var askingLength = false
     let contact: Contact
     let close: () -> Void
 
@@ -303,16 +304,35 @@ private struct ContactCard: View {
                 }
                 .buttonStyle(.plain)
             }
-            if model.state.sharingEnabled {
+            VStack(alignment: .leading, spacing: 2) {
                 Toggle("Share my location", isOn: Binding(
-                    get: { contact.share },
-                    set: { model.setShare(contact.id, $0) }
+                    get: { model.state.sharingEnabled && contact.share },
+                    set: { on in
+                        if on { askingLength = true } else { model.setShare(contact.id, false) }
+                    }
                 ))
-                .padding()
-                .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 14))
+                if model.state.sharingEnabled, contact.share, let end = contact.shareUntil {
+                    Text(Self.until(end)).font(.footnote).foregroundStyle(.secondary)
+                }
             }
+            .padding()
+            .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 14))
         }
         .padding()
         .containerRelativeFrame(.vertical, alignment: .top) { length, _ in length * (PanelHeight.medium.fraction + 0.11) }
+        .alert(Text("Share your location with \(contact.name)?"), isPresented: $askingLength) {
+            shareLengthButtons { length in
+                if let length { model.share(with: contact.id, for: length) }
+            }
+        } message: {
+            Text("\(contact.name) sees where you are for as long as you choose. You can stop it in their card.")
+        }
+    }
+
+    /// A share until the end of the day ends at midnight, which reads better in words.
+    private static func until(_ end: Date) -> String {
+        let time = Calendar.current.dateComponents([.hour, .minute, .second], from: end)
+        if time.hour == 0, time.minute == 0, time.second == 0 { return String(localized: "Until end of day") }
+        return String(localized: "Until \(end.formatted(date: .omitted, time: .shortened))")
     }
 }

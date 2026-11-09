@@ -11,12 +11,12 @@
         }
       }
     },
-    "%@ sees where you are until you turn it off in their card.": {
+    "%@ sees where you are for as long as you choose. You can stop it in their card.": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ näkee sijaintisi, kunnes laitat jakamisen pois hänen kortistaan."
+            "value": "%@ näkee sijaintisi niin kauan kuin valitset. Voit lopettaa jakamisen hänen kortistaan."
           }
         }
       }
@@ -51,12 +51,12 @@
         }
       }
     },
-    "%@. An iPhone shares when it has moved about 500 m and when Mismeet opens.": {
+    "%@. An iPhone shares when it has moved about 150 m, when Mismeet opens and now and then while it stays in place.": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@. iPhone jakaa, kun se on liikkunut noin 500 m ja kun Mismeet avataan."
+            "value": "%@. iPhone jakaa, kun se on liikkunut noin 150 m, kun Mismeet avataan ja aina välillä paikallaan ollessaan."
           }
         }
       }
@@ -227,6 +227,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Kysytään jokaiselta releeltä"
+          }
+        }
+      }
+    },
+    "Background App Refresh": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Appien päivitys taustalla"
           }
         }
       }
@@ -701,6 +711,16 @@
         }
       }
     },
+    "Off: an iPhone that stays in one place may share nothing for a day, and its contacts then see no location.": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pois: paikallaan pysyvä iPhone ei ehkä jaa mitään vuorokauteen, jolloin yhteystiedot eivät näe sijaintia."
+          }
+        }
+      }
+    },
     "Off: contacts see a point that can be kilometres away.": {
       "localizations": {
         "fi": {
@@ -971,12 +991,22 @@
         }
       }
     },
-    "Share": {
+    "Share for one hour": {
       "localizations": {
         "fi": {
           "stringUnit": {
             "state": "translated",
-            "value": "Jaa"
+            "value": "Jaa tunniksi"
+          }
+        }
+      }
+    },
+    "Share indefinitely": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaa toistaiseksi"
           }
         }
       }
@@ -1007,6 +1037,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Jaa nyt"
+          }
+        }
+      }
+    },
+    "Share until end of day": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jaa päivän loppuun"
           }
         }
       }
@@ -1147,6 +1187,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ei tavoitettavissa: %@"
+          }
+        }
+      }
+    },
+    "Until %@": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ asti"
+          }
+        }
+      }
+    },
+    "Until end of day": {
+      "localizations": {
+        "fi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Päivän loppuun asti"
           }
         }
       }

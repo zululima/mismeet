@@ -129,7 +129,8 @@ fun phoneChecks(context: Context, model: AppModel, state: PersistedState, backTo
             t(R.string.check_open_settings) to { openSettings(Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS, true) },
         )
     }
-    val sharingWith = state.contacts.count { it.share }
+    val now = System.currentTimeMillis()
+    val sharingWith = state.contacts.count { it.sharesAt(now) }
     checks += if (sharingWith == 0) {
         Check(t(R.string.check_sharing_with), Outcome.WARNING, t(R.string.check_sharing_with_nobody))
     } else {
