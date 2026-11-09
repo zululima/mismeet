@@ -5,9 +5,39 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
+## Add a relay probe that shows what each relay does with our events
+
+2026-11-09, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**1.**
+> mismeet video in downloads. the app should ask for location sharing
+> once you add a friend and but it should ask before you wanna share
+> location to them? also you can see the buggy getting of the lower
+> bar. fix that too. ui should match find my like smaller icons too.
+> like replace teh everyone with the compass icon like in find me.
+> mismeet should also ask name at start or ask again for people who
+> have not put their name. they can also just not set name. now it asks
+> blank wants to add you. replace that with unkonwn etc. mismeet also
+> shows apple maps legal but not on find me. translate the app to
+> finnish accordingly if the user has finnish as their os lang. lower
+> bar should also match the find me size now its a bit too big. refrehs
+> button is also unclear what it does remove that. me section should be
+> just one page not scrollable. last shared with contacts should be in
+> the debug menu too. also problem reports. also share now. also as you
+> can see ther are like 15h ago things. lets find out whats wrong with
+> the relays and if our pace is too short for them to accept. ill start
+> my own nostr only encrypetd relay if necessary later on.
+
+**2.**
+> take notes and references from other popular apps with sharing
+> locations features
+
+**3.**
+> so that people know already how to use this ui
+
 ## Link the Android APK in the README
 
-2026-11-06, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+2026-11-06, commit [404046b](https://github.com/zululima/mismeet/commit/404046b444161fdb62be7352c07b3f6b4fdb19e9), model claude-opus-5-5, effort xhigh.
 
 **3.** (answer to: have you signed in to App Store Connect in Chrome?) Quoted under [9862cc2](https://github.com/zululima/mismeet/commit/9862cc299465c4f12d560a268c652b0b16e6d47e).
 
@@ -1002,5 +1032,6 @@ text in CLAUDE.md?)
 - rn: right now
 - sku: stock keeping unit
 - ss: screenshot
+- ui: user interface
 - uri: uniform resource identifier
 - url: uniform resource locator

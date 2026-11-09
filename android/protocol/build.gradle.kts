@@ -34,6 +34,13 @@ tasks.register<JavaExec>("fakePublish") {
     args = (project.findProperty("fakeArgs") as String?)?.trim()?.split(Regex("\\s+")) ?: emptyList()
 }
 
+tasks.register<JavaExec>("relayProbe") {
+    description = "Asks each relay what it does with Mismeet's events: -PprobeArgs=\"[relay ...]\""
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass = "app.mismeet.protocol.RelayProbeKt"
+    args = (project.findProperty("probeArgs") as String?)?.trim()?.split(Regex("\\s+"))?.filter { it.isNotEmpty() } ?: emptyList()
+}
+
 // Reads the problem reports sent to the reports key, or makes the key with -PreportsArgs=new.
 tasks.register<JavaExec>("reports") {
     description = "Reads the problem reports sent to the reports key; -PreportsArgs=new makes the key"
