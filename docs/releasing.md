@@ -206,6 +206,11 @@ development cannot distribute. Every upload goes to App Store Connect, where it 
 build first. A release to the App Store submits one of those tested builds for review, so the
 binary users get is the one that was tested, and it is already tagged.
 
+Once App Review approves a version, App Store Connect takes no more builds of it: an upload
+fails with "Invalid Pre-Release Train", since the train of that version is closed. The next
+test build after an approval therefore also raises `MARKETING_VERSION` in `ios/project.yml` to
+the version the next release will be.
+
 Once, after the membership is active:
 
 1. Find the team id under Membership details at <https://developer.apple.com/account> and

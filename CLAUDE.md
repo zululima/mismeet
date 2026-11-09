@@ -126,7 +126,9 @@ follows it, and a protocol change edits the spec first, in the same change.
   request, as Play's policy demands.
 - Every push to `main` that changes what an app is built from (`ios/` for iOS, `android/` for
   Android) ships a test build of that app, by the user's standing go: raise
-  `CURRENT_PROJECT_VERSION` or `versionCode` in the pushed commit, then run
+  `CURRENT_PROJECT_VERSION` or `versionCode` in the pushed commit, and after App Review has
+  approved the current `MARKETING_VERSION` that too, to the next release's version, since App
+  Store Connect then refuses builds of the approved one ("Invalid Pre-Release Train"); then run
   `scripts/release.sh tag <platform>` and `upload-ios` for TestFlight or `upload-android` for
   Play's closed testing track, which goes through the Play Developer API with the service
   account key that the git-ignored `android/.play-key` names. `upload-android` then publishes

@@ -12,7 +12,7 @@ packages:
     exactVersion: 0.45.1
 settings:
   base:
-    MARKETING_VERSION: "0.2.0"
+    MARKETING_VERSION: "0.3.0"
     CURRENT_PROJECT_VERSION: "21"
     SWIFT_VERSION: "6.0"
     CODE_SIGN_STYLE: Automatic
