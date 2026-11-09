@@ -18,7 +18,7 @@ final class ProblemReportTests: XCTestCase {
 
     func testReportsKeyIsTheOneInTheSpec() throws {
         XCTAssertEqual(try ProblemReport.reportsKey.toBech32(), "npub1zvqr2zn45kdr0epvfc600z92sc7fdmhf8p46dz3e6tmwug8fk7fquge3l4")
-        XCTAssertEqual(ProtocolConstants.reportRelays, ["wss://relay.nostr.net", "wss://relay.primal.net"])
+        XCTAssertEqual(ProtocolConstants.reportRelays, ["wss://offchain.pub", "wss://relay.primal.net"])
     }
 
     func testRoundTripsTheTextAsAChatMessage() throws {

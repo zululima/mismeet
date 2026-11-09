@@ -49,7 +49,7 @@ contacts. A report never holds your location, a place name, a contact's name or 
 key or a photo.
 
 The report is encrypted for the developer's reports key alone (NIP-17) and sent from a key made
-for that one report, to the relays relay.nostr.net and relay.primal.net, which delete it after 30 days.
+for that one report, to the relays offchain.pub and relay.primal.net, which delete it after 30 days.
 Neither the relays nor the developer can tell from the report whose phone sent it; the relays
 see your IP address. The developer keeps reports to fix bugs and shares them with nobody.
 

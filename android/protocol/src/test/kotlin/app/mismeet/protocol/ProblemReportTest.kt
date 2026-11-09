@@ -24,7 +24,7 @@ class ProblemReportTest {
             "npub1zvqr2zn45kdr0epvfc600z92sc7fdmhf8p46dz3e6tmwug8fk7fquge3l4",
             PublicKey.parse(ProtocolConstants.REPORTS_PUBLIC_KEY).toBech32(),
         )
-        assertEquals(listOf("wss://relay.nostr.net", "wss://relay.primal.net"), ProtocolConstants.REPORT_RELAYS)
+        assertEquals(listOf("wss://offchain.pub", "wss://relay.primal.net"), ProtocolConstants.REPORT_RELAYS)
     }
 
     @Test

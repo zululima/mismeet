@@ -574,8 +574,9 @@ A client sends a report:
   a crash waits until that allows, and is forgotten when the setting is off.
 
 Reports go to the report relays of section 10, not to the user's relays, so that they reach the
-reader of the reports key. The reports key and the report relays are those of whoever builds
-and ships the app; a fork uses its own.
+reader of the reports key. A report relay serves kind `1059` by `#p` to unauthenticated readers,
+as the probe of section 7.4 found offchain.pub and relay.primal.net to do. The reports key and
+the report relays are those of whoever builds and ships the app; a fork uses its own.
 
 ## 9. Privacy and threat model
 
@@ -641,7 +642,7 @@ Other properties:
 | Automatic problem reports | at most one per 86400 seconds |
 | Log lines in a problem report | at most 50 |
 | Reports key | `npub1zvqr2zn45kdr0epvfc600z92sc7fdmhf8p46dz3e6tmwug8fk7fquge3l4` |
-| Report relays | `wss://relay.nostr.net`, `wss://relay.primal.net` |
+| Report relays | `wss://offchain.pub`, `wss://relay.primal.net` |
 | Content version | `1` |
 | Payload version | `1` |
 | Expiration | `created_at + 86400` seconds |

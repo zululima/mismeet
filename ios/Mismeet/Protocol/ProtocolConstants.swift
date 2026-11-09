@@ -16,7 +16,7 @@ enum ProtocolConstants {
     static let reportIntervalSeconds: TimeInterval = 86_400
     static let reportLogLines = 50
     static let reportsPublicKey = "1300350a75a59a37e42c4e34f788aa863c96eee9386ba68a39d2f6ee20e9b792"
-    static let reportRelays = ["wss://relay.nostr.net", "wss://relay.primal.net"]
+    static let reportRelays = ["wss://offchain.pub", "wss://relay.primal.net"]
     static let identifier = "location"
     static let contentVersion = 1
     static let payloadVersion = 1

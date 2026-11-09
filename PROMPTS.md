@@ -5,9 +5,16 @@ with its commit and pull request. Square brackets mark what was left out or reda
 commit without a prompts section is left out. This file is generated from the commit messages,
 so a change by hand is lost at the next commit.
 
-## Share for a chosen time, keep iPhones fresh and drop nos.lol
+## Send problem reports to offchain.pub instead of relay.nostr.net
 
 2026-11-09, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**6.** (answer to: shall I swap relay.nostr.net for offchain.pub in the    report relays?)
+> Yes, swap it
+
+## Share for a chosen time, keep iPhones fresh and drop nos.lol
+
+2026-11-09, commit [0e771d9](https://github.com/zululima/mismeet/commit/0e771d9dc153d717b78785488571d11f610a1111), model claude-opus-5-5, effort xhigh.
 
 **5.** (answer to: which relay replaces nos.lol, how iPhones stay fresh,    how long a share lasts, and whether the map icons change)
 > 1a 2a 3a 4a
