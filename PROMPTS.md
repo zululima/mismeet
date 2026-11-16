@@ -6,9 +6,16 @@ gives one. Square brackets mark what was left out or redacted, and a commit with
 section is left out. This file is generated from the commit messages, so a change by hand is
 lost at the next commit.
 
-## Count 7 of Play's 12 testers in the README
+## Count 8 of Play's 12 testers in the README
 
 2026-11-16, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**4.** (answer to: have you accepted Apple's updated license agreement?)
+> Done
+
+## Count 7 of Play's 12 testers in the README
+
+2026-11-16, commit [d09df20](https://github.com/zululima/mismeet/commit/d09df20795095f89f25ce38b4ca16dd0bd83f04b), model claude-opus-5-5, effort xhigh.
 
 **1.**
 > [pasted: the address of r/AndroidAppTesters]
