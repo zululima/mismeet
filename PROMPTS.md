@@ -1,13 +1,32 @@
 # Prompts
 
 The prompts behind the commits of this repository, as given to Claude Code, newest first, each
-with its commit and pull request. Square brackets mark what was left out or redacted, and a
-commit without a prompts section is left out. This file is generated from the commit messages,
-so a change by hand is lost at the next commit.
+with its commit and pull request, and under a prompt a summary of the reply where the commit
+gives one. Square brackets mark what was left out or redacted, and a commit without a prompts
+section is left out. This file is generated from the commit messages, so a change by hand is
+lost at the next commit.
+
+## Count 7 of Play's 12 testers in the README
+
+2026-11-16, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+
+**1.**
+> [pasted: the address of r/AndroidAppTesters]
+> lets create a post here about mismeet
+
+Reply: The r/AndroidAppTesters post for Mismeet is drafted, aimed at the 6 Play testers still missing (6 of 12 are opted in today). It isn't posted yet: Reddit is blocked for me, so you post it, and I couldn't read the subreddit's rules.
+
+**2.** (answer to: keep the offer to test other people's apps back?)
+> Yes, keep it
+
+Reply: The Reddit post keeps the offer to test other people's apps back, and the draft is final. Play still counts 6 of 12 testers opted in. The App Store review figure is still unread because App Store Connect wants a new agreement accepted.
+
+**3.** (answer to: posted on Reddit, App Store agreement accepted?)
+> Done
 
 ## Ship every iOS push to App Review instead of TestFlight
 
-2026-11-09, [the commit that last changed this file](https://github.com/zululima/mismeet/commits/main/PROMPTS.md), model claude-opus-5-5, effort xhigh.
+2026-11-09, commit [b9a1767](https://github.com/zululima/mismeet/commit/b9a17675380c9fc145ecea3ab373c2034241b1df), model claude-opus-5-5, effort xhigh.
 
 **7.** Quoted under [3a4dfe0](https://github.com/zululima/mismeet/commit/3a4dfe0899670c7a0c2afc32c2b0222858d96598).
 
